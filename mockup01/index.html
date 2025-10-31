@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<meta http-equiv="Cache-Control" content="no-cache">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VFX Editor v2.0 - CryEngine 3 Edition</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/panels.css">
+    <link rel="stylesheet" href="styles/controls.css">
+    <link rel="stylesheet" href="styles/curves.css">
+    <link rel="stylesheet" href="styles/menus.css">
+    <link rel="stylesheet" href="styles/checkpoints.css">
+    <link rel="stylesheet" href="styles/resize.css">
+    <link rel="stylesheet" href="styles/enhanced-parameters.css">
+</head>
+<body>
+    <!-- Top Menu Bar -->
+    <div class="menu-bar">
+        <div class="menu-items">
+            <div class="menu-item" data-menu="file">
+                File
+                <div class="dropdown-menu">
+                    <div class="menu-option" data-action="new">New Library...</div>
+                    <div class="menu-option" data-action="open">Open Library...</div>
+                    <div class="menu-option" data-action="save">Save</div>
+                    <div class="menu-option" data-action="saveas">Save As...</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="import">Import Effect...</div>
+                    <div class="menu-option" data-action="export">Export Effect...</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="exit">Exit</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="edit">
+                Edit
+                <div class="dropdown-menu">
+                    <div class="menu-option" data-action="undo">Undo <span class="shortcut">Ctrl+Z</span></div>
+                    <div class="menu-option" data-action="redo">Redo <span class="shortcut">Ctrl+Y</span></div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="cut">Cut <span class="shortcut">Ctrl+X</span></div>
+                    <div class="menu-option" data-action="copy">Copy <span class="shortcut">Ctrl+C</span></div>
+                    <div class="menu-option" data-action="paste">Paste <span class="shortcut">Ctrl+V</span></div>
+                    <div class="menu-option" data-action="copy-expr">Copy as Expression <span class="shortcut">Ctrl+Shift+C</span></div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="find">Find... <span class="shortcut">Ctrl+F</span></div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="view">
+                View
+                <div class="dropdown-menu">
+                    <div class="menu-option" data-action="library">Toggle Library <span class="shortcut">F1</span></div>
+                    <div class="menu-option" data-action="timeline">Toggle Timeline <span class="shortcut">F2</span></div>
+                    <div class="menu-option" data-action="parameters">Toggle Parameters <span class="shortcut">F3</span></div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="reset">Reset Layout</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="library">
+                Library
+                <div class="dropdown-menu">
+                    <div class="menu-option" data-action="refresh">Refresh Libraries</div>
+                    <div class="menu-option" data-action="reload">Reload Selected</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="newfolder">New Folder</div>
+                    <div class="menu-option" data-action="neweffect">New Effect</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="tools">
+                Tools
+                <div class="dropdown-menu">
+                    <div class="menu-option" data-action="profiler">Performance Profiler</div>
+                    <div class="menu-option" data-action="batchexport">Batch Export...</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="scripts">Run Script...</div>
+                    <div class="menu-option" data-action="templates">Manage Templates</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="window">
+                Window
+                <div class="dropdown-menu">
+                    <div class="menu-option" data-action="newwindow">New Window</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="checkpoints">Checkpoints Manager</div>
+                    <div class="menu-option" data-action="console">Console Output</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="help">
+                Help
+                <div class="dropdown-menu">
+                    <div class="menu-option" data-action="docs">Documentation</div>
+                    <div class="menu-option" data-action="shortcuts">Keyboard Shortcuts</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="about">About VFX Editor</div>
+                </div>
+            </div>
+        </div>
+        <div class="menu-title">VFX Editor v2.0 - CryEngine 3 Edition</div>
+        <div class="menu-actions">
+            <button class="icon-btn" title="Save (Ctrl+S)"><span>💾</span></button>
+            <button class="icon-btn" title="Settings"><span>⚙️</span></button>
+        </div>
+    </div>
+
+    <!-- Main Toolbar -->
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button class="tool-btn active" title="Select Tool (V)">
+                <svg width="20" height="20" viewBox="0 0 20 20">
+                    <path d="M4 4 L16 10 L10 11 L8 16 Z" fill="currentColor"/>
+                </svg>
+            </button>
+            <button class="tool-btn" title="New Effect (Ctrl+N)">
+                <span>➕</span>
+            </button>
+            <button class="tool-btn" title="Delete (Del)">
+                <span>🗑️</span>
+            </button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="toolbar-group">
+            <button class="tool-btn" title="Undo (Ctrl+Z)">
+                <span>↶</span>
+            </button>
+            <button class="tool-btn" title="Redo (Ctrl+Y)">
+                <span>↷</span>
+            </button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="toolbar-group">
+            <button class="tool-btn" title="Play (Space)">
+                <span>▶</span>
+            </button>
+            <button class="tool-btn" title="Pause (Space)">
+                <span>⏸</span>
+            </button>
+            <button class="tool-btn" title="Stop (Esc)">
+                <span>⏹</span>
+            </button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <!-- Checkpoints Toolbar -->
+        <div class="toolbar-group checkpoint-toolbar">
+            <button class="tool-btn checkpoint-btn" id="create-checkpoint" title="Create Checkpoint (Ctrl+Shift+C)">
+                <span>📌</span>
+            </button>
+            <div class="checkpoint-selector" id="checkpoint-selector">
+                <button class="checkpoint-quick-btn" data-checkpoint="1" title="Checkpoint 1 | Click: Load | Ctrl+Click: Save | Keys: 1=Load, Ctrl+Shift+1=Save">
+                    <span class="checkpoint-label">CP</span>
+                    <span class="checkpoint-number">1</span>
+                </button>
+                <button class="checkpoint-quick-btn" data-checkpoint="2" title="Checkpoint 2 | Click: Load | Ctrl+Click: Save | Keys: 2=Load, Ctrl+Shift+2=Save">
+                    <span class="checkpoint-label">CP</span>
+                    <span class="checkpoint-number">2</span>
+                </button>
+            </div>
+            <button class="tool-btn" id="manage-checkpoints" title="Manage Checkpoints (Add up to 10 total)">
+                <span>📋</span>
+            </button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">FPS: <span class="value">60.0</span></span>
+            <span class="toolbar-label">Particles: <span class="value">1,247</span></span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container" id="main-container">
+        <!-- Left Sidebar - Library Browser -->
+        <div class="panel left-panel resizable-panel" id="library-panel" data-min-width="200" data-max-width="500">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-icon">📚</span>
+                    Library Browser
+                </div>
+                <div class="panel-actions">
+                    <button class="panel-btn" title="Refresh Libraries (F5)">🔄</button>
+                    <button class="panel-btn" title="New Library">➕</button>
+                </div>
+            </div>
+            <div class="panel-toolbar">
+                <input type="text" class="search-input" id="library-search" placeholder="Search effects...">
+            </div>
+            <div class="panel-content" id="library-content">
+                <!-- Library tree will be populated by JavaScript -->
+            </div>
+            <div class="resize-handle resize-handle-right" data-panel="library-panel"></div>
+        </div>
+
+        <!-- Center Area -->
+        <div class="center-area">
+            <!-- Viewport Preview -->
+            <div class="panel viewport-panel resizable-panel-vertical" id="viewport-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-icon">🎬</span>
+                        Viewport Preview
+                    </div>
+                    <div class="panel-actions">
+                        <button class="panel-btn" title="Zoom to Fit">🔍</button>
+                        <button class="panel-btn" title="Performance Stats">⚡</button>
+                    </div>
+                </div>
+                <div class="viewport-container">
+                    <div class="viewport-bg">
+                        <div class="grid-lines"></div>
+                        <div class="particle-preview" id="particle-preview">
+                            <!-- Simulated particle effect will render here -->
+                        </div>
+                        <div class="viewport-overlay">
+                            <div class="viewport-stats">
+                                <div>Draw Calls: 23</div>
+                                <div>Overdraw: <span class="stat-good">Low</span></div>
+                                <div>GPU: 2.3ms</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="resize-handle resize-handle-bottom" data-panel="viewport-panel"></div>
+            </div>
+
+            <!-- Timeline View -->
+            <div class="panel timeline-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-icon">⏱️</span>
+                        Timeline
+                    </div>
+                    <div class="panel-actions">
+                        <button class="panel-btn" title="Timeline Settings">⚙️</button>
+                    </div>
+                </div>
+                <div class="timeline-container" id="timeline-container">
+                    <!-- Timeline will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar - Parameters & Curve Editor -->
+        <div class="right-area resizable-panel" id="right-panel" data-min-width="300" data-max-width="600">
+            <div class="resize-handle resize-handle-left" data-panel="right-panel"></div>
+            <div class="panel-tabs">
+                <button class="tab-btn active" data-tab="parameters" title="Parameters (Alt+1)">Parameters</button>
+                <button class="tab-btn" data-tab="curves" title="Curve Editor (Alt+2)">Curve Editor</button>
+                <button class="tab-btn" data-tab="expressions" title="Expressions (Alt+3)">Expressions</button>
+            </div>
+
+            <!-- Parameters Panel -->
+            <div class="panel parameters-panel active" id="parameters-tab">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-icon">🎛️</span>
+                        CryEngine 3 Parameters
+                    </div>
+                    <div class="panel-actions">
+                        <button class="panel-btn" title="Search Parameters (Ctrl+F)">🔍</button>
+                        <button class="panel-btn" title="Reset All to Default">↺</button>
+                    </div>
+                </div>
+                <div class="panel-content parameters-content" id="parameters-content">
+                    <!-- Parameters will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Curve Editor Panel -->
+            <div class="panel curves-panel" id="curves-tab">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-icon">📈</span>
+                        Curve Editor
+                    </div>
+                    <div class="panel-actions">
+                        <button class="panel-btn" title="Curve Settings">⚙️</button>
+                    </div>
+                </div>
+                <div class="curve-editor-container" id="curve-editor">
+                    <!-- Curve editor will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Expressions Panel -->
+            <div class="panel expressions-panel" id="expressions-tab">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-icon">🧮</span>
+                        Expressions & References
+                    </div>
+                    <div class="panel-actions">
+                        <button class="panel-btn" title="Add New Expression">➕</button>
+                    </div>
+                </div>
+                <div class="panel-content expressions-content" id="expressions-content">
+                    <div class="expression-help-banner">
+                        <h4>💡 Expression System</h4>
+                        <ul>
+                            <li><strong>Copy as Expression:</strong> Right-click parameter → Copy as Expression (or Ctrl+Shift+C)</li>
+                            <li><strong>Create Reference:</strong> Middle-mouse drag from source to target parameter</li>
+                            <li><strong>Edit Expression:</strong> Right-click parameter → Edit Expression</li>
+                            <li><strong>Syntax:</strong> Use ${ParamName}, @ParamName, or %ParamName% to reference parameters</li>
+                            <li><strong>Math:</strong> Use sin, cos, sqrt, pow, min, max, abs, clamp, lerp, remap</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-label">Selected:</span>
+            <span class="status-value" id="selected-effect">Thruster_Main</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Library:</span>
+            <span class="status-value">Ships/Thrusters.vfxlib</span>
+        </div>
+        <div class="status-separator"></div>
+        <div class="status-item">
+            <span class="status-label">Checkpoint:</span>
+            <span class="status-value" id="current-checkpoint">None</span>
+            <span class="status-hint" style="font-size: 10px; color: var(--text-muted); margin-left: 8px;">(Press 1-2 to switch)</span>
+        </div>
+        <div class="status-separator"></div>
+        <div class="status-item">
+            <span class="status-indicator status-good"></span>
+            <span>Ready - CryEngine 3 Mode</span>
+        </div>
+    </div>
+
+    <!-- Checkpoint Manager Modal -->
+    <div class="modal" id="checkpoint-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Checkpoint Manager</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="checkpoint-list">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/resizeManager.js" type="module"></script>
+    <script src="js/app.js" type="module"></script>
+    <script src="js/menus.js" type="module"></script>
+    <script src="js/checkpoints.js" type="module"></script>
+    <script src="js/keyboardShortcuts.js" type="module"></script>
+</body>
+</html>

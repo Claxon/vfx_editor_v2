@@ -1,0 +1,185 @@
+/* Enhanced Parameters - Expression System Only */
+/* This file ONLY adds expression/reference features, NOT widget styling */
+
+/* Expression Indicators */
+.parameter-row.expression {
+    border-left: 3px solid #4fc3f7;
+}
+
+.parameter-row.dependency {
+    border-left: 3px solid #ffa726;
+}
+
+.parameter-row.dragging {
+    opacity: 0.6;
+    border: 2px dashed #66bb6a;
+}
+
+.expr-indicator {
+    font-size: 9px;
+    padding: 2px 5px;
+    background: #4fc3f7;
+    color: #000;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.ref-indicator {
+    font-size: 9px;
+    padding: 2px 5px;
+    background: #ffa726;
+    color: #000;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+/* Context Menu */
+.context-menu {
+    position: fixed;
+    min-width: 200px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    overflow: hidden;
+}
+
+.context-menu-item {
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.context-menu-item:hover {
+    background: var(--bg-quaternary);
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+
+/* Toast Notifications */
+.toast-notification {
+    position: fixed;
+    bottom: -100px;
+    right: 24px;
+    min-width: 300px;
+    padding: 12px 18px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid #4fc3f7;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    color: var(--text-primary);
+    font-size: 13px;
+    z-index: 10001;
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-notification.show {
+    bottom: 24px;
+}
+
+.toast-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.toast-message {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+/* Expression Editor Styles */
+.expression-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.expression-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.expression-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.expression-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.expression-code {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    resize: vertical;
+    margin-bottom: 8px;
+}
+
+.expression-code:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.expression-help {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.new-expression-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.15s ease;
+}
+
+.new-expression-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* Slight widget enhancements - DON'T change layout! */
+.slider-handle {
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.slider-handle:hover {
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 2px 8px rgba(79, 195, 247, 0.4);
+}
+
+.vector-input:focus {
+    box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.2);
+}
+
+.color-swatch:hover {
+    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
+}

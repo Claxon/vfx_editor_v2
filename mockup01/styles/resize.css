@@ -1,0 +1,64 @@
+/* Resizable Panel Styles */
+
+.resize-handle {
+    position: absolute;
+    background: transparent;
+    z-index: 100;
+    transition: background-color 0.15s ease;
+}
+
+.resize-handle:hover {
+    background: var(--accent-primary);
+}
+
+.resize-handle:active {
+    background: var(--accent-secondary);
+}
+
+.resize-handle-right {
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: ew-resize;
+}
+
+.resize-handle-left {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: ew-resize;
+}
+
+.resize-handle-bottom {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    cursor: ns-resize;
+}
+
+.resize-handle-top {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 4px;
+    cursor: ns-resize;
+}
+
+.resizable-panel {
+    position: relative;
+}
+
+.resizable-panel-vertical {
+    position: relative;
+}
+
+/* Make handle more visible on hover */
+.resize-handle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: scale(3);
+}

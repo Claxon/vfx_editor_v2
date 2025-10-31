@@ -1,0 +1,2034 @@
+{
+  "version": "1.0",
+  "exportDate": "2025-10-30T14:00:00.000Z",
+  "projectData": {
+    "stages": [
+      {
+        "id": "stage1",
+        "number": 1,
+        "title": "Core Foundation",
+        "duration": "4-6 weeks",
+        "tasks": [
+          {
+            "id": "task1-1",
+            "title": "Qt-based VFX Tab",
+            "description": "<p>Create a standalone Qt-based VFX editor window, replacing the old 'database view' interface.</p><p><strong>Requirements:</strong></p><ul><li>Modern Qt interface design</li><li>Dockable panels for flexibility</li><li>Support for multiple monitor setups</li><li>User interface preferences persistence</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "critical",
+            "duration": "2-3 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2025-12-15",
+            "color": "#e53e3e",
+            "dependencies": [],
+            "labels": [
+              {
+                "text": "Core",
+                "color": "#FF5722"
+              },
+              {
+                "text": "Foundation",
+                "color": "#9C27B0"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design Qt window architecture",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement docking system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add preferences system",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Multi-monitor testing",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task1-2",
+            "title": "Read & Write Support",
+            "description": "<p>Implement robust read and write support for VFX data structures in an extensible way.</p><p><strong>Technical Details:</strong></p><ul><li>JSON-based format for flexibility</li><li>Backward compatibility with legacy formats</li><li>Validation and error handling</li><li>Version control for data structures</li></ul><p><em>[💡 Programmer Suggestion]</em></p><p><strong>AI Suggestion:</strong> Consider implementing a plugin system for data format converters to support future file format changes without breaking existing tools.</p>",
+            "priority": "critical",
+            "duration": "2 weeks",
+            "team": "Programming",
+            "dueDate": "2025-12-01",
+            "color": "#e53e3e",
+            "dependencies": [],
+            "labels": [
+              {
+                "text": "Core",
+                "color": "#FF5722"
+              },
+              {
+                "text": "Data",
+                "color": "#2196F3"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Define data schema",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement serialization",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add backward compatibility",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create validation system",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage2",
+        "number": 2,
+        "title": "Curve Editor Enhancements",
+        "duration": "6-8 weeks",
+        "tasks": [
+          {
+            "id": "task2-1",
+            "title": "Better Curve Controls",
+            "description": "<p>Implement advanced curve handle controls for various interpolation types instead of relying solely on presets.</p><p><strong>Features:</strong></p><ul><li>Bezier handles for smooth curves</li><li>Linear interpolation mode</li><li>Step/Corner interpolation</li><li>Custom tangent control</li><li>Per-point interpolation mode selection</li></ul><p><em>[🎨 Artist Request - Severity: S4]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-130500.png'>Curve Editor Example</a></p>",
+            "priority": "high",
+            "duration": "2-3 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2026-01-15",
+            "color": "#f59e0b",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Curve Editor",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Artist Request",
+                "color": "#FF9800"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement bezier handles",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add interpolation mode selector",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create tangent controls",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "User testing with artists",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task2-2",
+            "title": "Easier Curve Point Selection",
+            "description": "<p>Improve the selection area and feedback for curve points to make them easier to grab and manipulate, especially when working remotely via Parsec.</p><p><strong>Improvements:</strong></p><ul><li>Larger hit detection area</li><li>Visual feedback on hover</li><li>Smart snapping to nearby points</li><li>Keyboard navigation between points</li><li>Manual value input (already implemented by Alex)</li></ul><p><em>[🎨 Artist Request - Severity: S4]</em></p>",
+            "priority": "high",
+            "duration": "1 week",
+            "team": "UI/Programming",
+            "dueDate": "2026-01-22",
+            "color": "#f59e0b",
+            "dependencies": ["task2-1"],
+            "labels": [
+              {
+                "text": "Curve Editor",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "UX",
+                "color": "#3F51B5"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Increase hit detection radius",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add hover highlights",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Implement keyboard navigation",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Test with Parsec",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task2-3",
+            "title": "Dedicated Curve Editor Window",
+            "description": "<p>Create a dedicated curve editor window that can display multiple splines simultaneously with advanced features.</p><p><strong>Features:</strong></p><ul><li>Multiple splines in single window</li><li>Values above 1 and below 0</li><li>Zoom in/out functionality</li><li>Bezier, corner, and linear modes</li><li>Grid snapping</li><li>Copy/paste curves</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-130553.png'>Multi-curve Editor</a></p>",
+            "priority": "high",
+            "duration": "3 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2026-02-12",
+            "color": "#f59e0b",
+            "dependencies": ["task2-2"],
+            "labels": [
+              {
+                "text": "Curve Editor",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Window",
+                "color": "#00BCD4"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design window layout",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement multi-spline rendering",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add zoom/pan controls",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Implement grid system",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Add copy/paste functionality",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task2-4",
+            "title": "Multi-curve Widget (Effect Wide)",
+            "description": "<p>Large curve editor widget showing all curves used in an effect with parameter associations.</p><p><strong>Requirements:</strong></p><ul><li>Display all effect curves simultaneously</li><li>Color-coded by parameter type</li><li>Filter/search curves by name</li><li>Lock/unlock curves for editing</li><li>Synchronized timeline scrubbing</li></ul><p><em>[💡 Programmer Suggestion]</em></p><p><strong>AI Suggestion:</strong> Consider adding curve grouping and layers to manage complex effects with many curves more efficiently.</p>",
+            "priority": "high",
+            "duration": "2 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2026-02-26",
+            "color": "#f59e0b",
+            "dependencies": ["task2-3"],
+            "labels": [
+              {
+                "text": "Curve Editor",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Visualization",
+                "color": "#E91E63"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement multi-curve display",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add color coding system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create filter controls",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add lock/unlock mechanism",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task2-5",
+            "title": "Random Range Curves",
+            "description": "<p>Allow two curves on a graph to show and control the range of random spread for parameter values.</p><p><strong>Implementation:</strong></p><ul><li>Min/max curve pairs</li><li>Visual representation of range</li><li>Random distribution preview</li><li>Per-particle randomization</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "medium",
+            "duration": "1-2 weeks",
+            "team": "Programming",
+            "dueDate": "2026-03-12",
+            "color": "#3b82f6",
+            "dependencies": ["task2-4"],
+            "labels": [
+              {
+                "text": "Curve Editor",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Randomization",
+                "color": "#673AB7"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design range curve UI",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement min/max pairing",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add preview visualization",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Test with various distributions",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task2-6",
+            "title": "Different Interpolation Modes",
+            "description": "<p>Fully featured curve editor supporting different interpolation methods and multiple splines.</p><p><strong>Interpolation Types:</strong></p><ul><li>Linear</li><li>Bezier (cubic)</li><li>Step/Corner</li><li>Smooth (Catmull-Rom)</li><li>Custom ease curves</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "medium",
+            "duration": "2 weeks",
+            "team": "Programming",
+            "dueDate": "2026-03-26",
+            "color": "#3b82f6",
+            "dependencies": ["task2-1"],
+            "labels": [
+              {
+                "text": "Curve Editor",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Math",
+                "color": "#009688"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement linear interpolation",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add bezier support",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create step mode",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add smooth interpolation",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Performance optimization",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage3",
+        "number": 3,
+        "title": "Expression System & Variables",
+        "duration": "4-6 weeks",
+        "tasks": [
+          {
+            "id": "task3-1",
+            "title": "Local Variables for Particles",
+            "description": "<p>Implement ability to create custom local variables for particle effects, allowing better control beyond just the strength curve.</p><p><strong>Features:</strong></p><ul><li>User-defined variable names</li><li>Per-effect variable scope</li><li>Variable inheritance</li><li>Default value support</li><li>Variable grouping/categories</li></ul><p><em>[🎨 Artist Request - Severity: S3]</em></p><p><strong>AI Suggestion:</strong> Consider adding variable templates for common use cases (e.g., damage level, intensity, temperature) to speed up workflow.</p>",
+            "priority": "high",
+            "duration": "2-3 weeks",
+            "team": "Programming",
+            "dueDate": "2026-04-15",
+            "color": "#f59e0b",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Expressions",
+                "color": "#8BC34A"
+              },
+              {
+                "text": "Variables",
+                "color": "#CDDC39"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design variable system architecture",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement variable storage",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create UI for variable management",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add variable inheritance system",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Test with complex effects",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task3-2",
+            "title": "Math Operations & Complex Expressions",
+            "description": "<p>Implement mathematical operations and complex expressions to allow parameter relationships (similar to Houdini).</p><p><strong>Operations:</strong></p><ul><li>Basic: +, -, *, /</li><li>Functions: sin, cos, pow, sqrt, abs</li><li>Conditionals: if/else logic</li><li>Parameter references</li><li>Time-based calculations</li></ul><p><strong>Example Use Cases:</strong></p><ul><li>Lifetime tied to speed: <code>lifetime = baseLifetime / (speed * 0.1)</code></li><li>Scale tied to lifetime: <code>scale = maxScale * (1 - (age / lifetime))</code></li><li>Color based on velocity: <code>color.r = clamp(velocity / 100, 0, 1)</code></li></ul><p><em>[🎨 Artist Request - Severity: S3]</em></p><p><em>[💡 Programmer Suggestion - Step 1: Save-time evaluation, Step 2: Real-time (maybe)]</em></p>",
+            "priority": "high",
+            "duration": "3-4 weeks",
+            "team": "Programming",
+            "dueDate": "2026-05-13",
+            "color": "#f59e0b",
+            "dependencies": ["task3-1"],
+            "labels": [
+              {
+                "text": "Expressions",
+                "color": "#8BC34A"
+              },
+              {
+                "text": "Math",
+                "color": "#009688"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement expression parser",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add basic math operations",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Implement math functions",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add parameter reference system",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Create expression editor UI",
+                "completed": false
+              },
+              {
+                "id": "c6",
+                "text": "Add syntax validation",
+                "completed": false
+              },
+              {
+                "id": "c7",
+                "text": "Performance testing",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task3-3",
+            "title": "Reference Expressions",
+            "description": "<p>Allow parameters to reference other parameters exactly, with support for copy-paste by value or by expression.</p><p><strong>Features:</strong></p><ul><li>Direct parameter linking</li><li>Expression-based references</li><li>Copy by value vs copy by reference</li><li>Visual indication of referenced parameters</li><li>Circular reference detection</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "medium",
+            "duration": "2 weeks",
+            "team": "Programming",
+            "dueDate": "2026-05-27",
+            "color": "#3b82f6",
+            "dependencies": ["task3-2"],
+            "labels": [
+              {
+                "text": "Expressions",
+                "color": "#8BC34A"
+              },
+              {
+                "text": "Linking",
+                "color": "#FF5722"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement reference system",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add copy/paste modes",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create visual indicators",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Implement cycle detection",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task3-4",
+            "title": "Additional Effect Inputs",
+            "description": "<p>Allow multiple input modifiers beyond just strength/lifetime, customizable per effect.</p><p><strong>Input Types:</strong></p><ul><li>Damage level</li><li>Intensity</li><li>Temperature</li><li>Velocity</li><li>Custom named inputs</li></ul><p><strong>Features:</strong></p><ul><li>Per-effect input configuration</li><li>Input curve mapping</li><li>Multiple inputs simultaneously</li><li>Code-driven input values</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "high",
+            "duration": "2-3 weeks",
+            "team": "Programming",
+            "dueDate": "2026-06-17",
+            "color": "#f59e0b",
+            "dependencies": ["task3-1"],
+            "labels": [
+              {
+                "text": "Effect Inputs",
+                "color": "#00BCD4"
+              },
+              {
+                "text": "Variables",
+                "color": "#CDDC39"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design input system architecture",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement input registry",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create input curve mapping",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add UI for input management",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Code integration testing",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage4",
+        "number": 4,
+        "title": "Library & Organization",
+        "duration": "3-4 weeks",
+        "tasks": [
+          {
+            "id": "task4-1",
+            "title": "Effect Re-ordering in Libraries",
+            "description": "<p>Enable manual reorganization and reordering of emitters within libraries for better readability.</p><p><strong>Features:</strong></p><ul><li>Drag-and-drop reordering</li><li>Sort by name/date/type</li><li>Custom ordering persistence</li><li>Folder organization</li><li>Separator/divider support</li></ul><p><em>[🎨 Artist Request - Severity: S4]</em></p>",
+            "priority": "medium",
+            "duration": "1 week",
+            "team": "UI/Programming",
+            "dueDate": "2026-07-08",
+            "color": "#3b82f6",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "FX Libraries",
+                "color": "#9C27B0"
+              },
+              {
+                "text": "Organization",
+                "color": "#607D8B"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement drag-and-drop",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add sorting options",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Save ordering preferences",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Test with large libraries",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task4-2",
+            "title": "Library Browser",
+            "description": "<p>Multi-library browser allowing multiple libraries to be loaded and viewed simultaneously (similar to Unity multi-scene editing).</p><p><strong>Features:</strong></p><ul><li>Load multiple libraries at once</li><li>Unified tree view</li><li>Cross-library search</li><li>Library tabs or panels</li><li>Recently used libraries</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-125516.png'>Library Browser Example</a></p>",
+            "priority": "high",
+            "duration": "2-3 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2026-07-29",
+            "color": "#f59e0b",
+            "dependencies": ["task4-1"],
+            "labels": [
+              {
+                "text": "FX Libraries",
+                "color": "#9C27B0"
+              },
+              {
+                "text": "Browser",
+                "color": "#03A9F4"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design multi-library UI",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement library loading system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create unified tree view",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add cross-library search",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Implement recent libraries",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task4-3",
+            "title": "Pinned/Favorited Libraries",
+            "description": "<p>Quick access to frequently used libraries through pinning and favorites system.</p><p><strong>Features:</strong></p><ul><li>Pin libraries to top</li><li>Favorites list</li><li>Quick access toolbar</li><li>Keyboard shortcuts</li><li>Per-user preferences</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "low",
+            "duration": "3-5 days",
+            "team": "UI/Programming",
+            "dueDate": "2026-08-05",
+            "color": "#10b981",
+            "dependencies": ["task4-2"],
+            "labels": [
+              {
+                "text": "FX Libraries",
+                "color": "#9C27B0"
+              },
+              {
+                "text": "UX",
+                "color": "#3F51B5"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement pin/favorite system",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Create quick access UI",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add keyboard shortcuts",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Save user preferences",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage5",
+        "number": 5,
+        "title": "Parameters & Inheritance",
+        "duration": "3-4 weeks",
+        "tasks": [
+          {
+            "id": "task5-1",
+            "title": "Keep Current Values on Inheritance",
+            "description": "<p>Option to preserve current values when converting an effect to use ExternalRef or From Parent inheritance.</p><p><strong>Problem:</strong> Currently impossible to parent an effect or use external ref after creation without losing values.</p><p><strong>Solution:</strong></p><ul><li>\"Convert to parent\" wizard</li><li>Preserve local overrides option</li><li>Visual diff before conversion</li><li>Undo support</li></ul><p><em>[🎨 Artist Request - Severity: S2]</em></p>",
+            "priority": "high",
+            "duration": "1-2 weeks",
+            "team": "Programming",
+            "dueDate": "2026-08-19",
+            "color": "#f59e0b",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Inheritance",
+                "color": "#FF9800"
+              },
+              {
+                "text": "Parameters",
+                "color": "#00BCD4"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design conversion workflow",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement value preservation",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create preview diff",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add undo support",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task5-2",
+            "title": "Emitter Strength for Emissive",
+            "description": "<p>Enable emitter strength curve control for emissive lighting over the emitter lifetime.</p><p><strong>Implementation:</strong></p><ul><li>Emissive strength parameter</li><li>Curve-based control</li><li>HDR emissive values</li><li>Integration with lighting system</li></ul><p><em>[🎨 Artist Request - Severity: S3]</em></p>",
+            "priority": "medium",
+            "duration": "1 week",
+            "team": "Programming",
+            "dueDate": "2026-08-26",
+            "color": "#3b82f6",
+            "dependencies": [],
+            "labels": [
+              {
+                "text": "Parameters",
+                "color": "#00BCD4"
+              },
+              {
+                "text": "Lighting",
+                "color": "#FFEB3B"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Add emissive strength parameter",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement curve control",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Support HDR values",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Test with various effects",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task5-3",
+            "title": "Togglable State Badges",
+            "description": "<p>Add visual badges showing parameter state (Default, Inherited, Local Override) with quick toggle functionality.</p><p><strong>Features:</strong></p><ul><li>Visual state indicators</li><li>Click to toggle states</li><li>Color-coded badges</li><li>Quick revert to default</li><li>Batch state operations</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "medium",
+            "duration": "1 week",
+            "team": "UI/Programming",
+            "dueDate": "2026-09-02",
+            "color": "#3b82f6",
+            "dependencies": ["task5-1"],
+            "labels": [
+              {
+                "text": "Parameters",
+                "color": "#00BCD4"
+              },
+              {
+                "text": "UI",
+                "color": "#E91E63"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design badge system",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement state detection",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create toggle UI",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add batch operations",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task5-4",
+            "title": "Collapse Groups by Default",
+            "description": "<p>Collapse parameter sections by default while remembering per-user expansion state.</p><p><strong>Features:</strong></p><ul><li>Default collapsed state</li><li>Per-user preferences</li><li>Expand all / Collapse all</li><li>Search expands relevant groups</li><li>Smart expand on edit</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "low",
+            "duration": "3-5 days",
+            "team": "UI/Programming",
+            "dueDate": "2026-09-09",
+            "color": "#10b981",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Parameters",
+                "color": "#00BCD4"
+              },
+              {
+                "text": "UX",
+                "color": "#3F51B5"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement collapse system",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Save user preferences",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add expand/collapse all",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Integrate with search",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage6",
+        "number": 6,
+        "title": "Profiling & Performance",
+        "duration": "2-3 weeks",
+        "tasks": [
+          {
+            "id": "task6-1",
+            "title": "Better Profiling for Individual Particles",
+            "description": "<p>Create comprehensive profiling window showing performance impact of particle effects.</p><p><strong>Metrics to Display:</strong></p><ul><li>Frame time per emitter</li><li>GPU cost</li><li>CPU cost</li><li>Transparency/overdraw cost</li><li>Memory usage</li><li>Particle count</li><li>Render call count</li></ul><p><strong>Features:</strong></p><ul><li>Color-coded warnings (pink = bad, similar to overdraw)</li><li>Real-time updates</li><li>Historical graphs</li><li>Comparison mode</li><li>Export reports</li></ul><p><em>[🎨 Artist Request - Severity: S3]</em></p><p><em>[💡 Programmer Suggestion]</em></p><p><strong>AI Suggestion:</strong> Add preset performance budgets for different platforms (PC Ultra, Console, Low-end) with automatic warnings when exceeded.</p>",
+            "priority": "high",
+            "duration": "2-3 weeks",
+            "team": "Programming/Performance",
+            "dueDate": "2026-09-30",
+            "color": "#f59e0b",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Profiling",
+                "color": "#F44336"
+              },
+              {
+                "text": "Performance",
+                "color": "#FF5722"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design profiling UI",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement metric collection",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create visualization graphs",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add warning system",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Implement comparison mode",
+                "completed": false
+              },
+              {
+                "id": "c6",
+                "text": "Add export functionality",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage7",
+        "number": 7,
+        "title": "UI/UX Improvements",
+        "duration": "4-5 weeks",
+        "tasks": [
+          {
+            "id": "task7-1",
+            "title": "Easier Panel Size Sliders",
+            "description": "<p>Improve panel resize controls to make them easier to grab and manipulate, especially over Parsec.</p><p><strong>Improvements:</strong></p><ul><li>Larger hit detection areas</li><li>Visual feedback on hover</li><li>Double-click to reset to default size</li><li>Snap-to-grid functionality</li><li>Save panel layouts</li></ul><p><em>[🎨 Artist Request - Severity: S4]</em></p>",
+            "priority": "low",
+            "duration": "3-5 days",
+            "team": "UI",
+            "dueDate": "2026-10-14",
+            "color": "#10b981",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Style Improvements",
+                "color": "#3F51B5"
+              },
+              {
+                "text": "UX",
+                "color": "#3F51B5"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Increase resize handle size",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add hover effects",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Implement double-click reset",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Test with Parsec",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task7-2",
+            "title": "More Colorful UI",
+            "description": "<p>Redesign UI with more vibrant color palette inspired by DAW interfaces (Ableton Live, Bitwig) instead of bland engine defaults.</p><p><strong>Improvements:</strong></p><ul><li>Vibrant color scheme</li><li>Better contrast</li><li>Color-coded sections</li><li>Dark/light theme support</li><li>Customizable accent colors</li><li>Accessibility compliance</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-145125.png'>Ableton Example</a>, <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-145148.png'>Bitwig Example</a></p><p><strong>AI Suggestion:</strong> Consider offering preset color themes (Classic, Vibrant, High Contrast) for different user preferences and accessibility needs.</p>",
+            "priority": "medium",
+            "duration": "2-3 weeks",
+            "team": "UI/Design",
+            "dueDate": "2026-11-04",
+            "color": "#3b82f6",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Style Improvements",
+                "color": "#3F51B5"
+              },
+              {
+                "text": "Design",
+                "color": "#E91E63"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design new color palette",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Create theme system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Implement color-coded sections",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Test accessibility",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "User feedback session",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage8",
+        "number": 8,
+        "title": "Templates & Shortcuts",
+        "duration": "2-3 weeks",
+        "tasks": [
+          {
+            "id": "task8-1",
+            "title": "Effect Templates",
+            "description": "<p>Create shareable template system for whole effects or modules with easy team distribution.</p><p><strong>Features:</strong></p><ul><li>Save effects as templates</li><li>Template library browser</li><li>Categorization and tagging</li><li>Template preview</li><li>Version control</li><li>Team sharing</li><li>Import/export templates</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p><strong>AI Suggestion:</strong> Include starter templates for common effects (fire, smoke, sparks, explosions) to help new artists get up to speed quickly.</p>",
+            "priority": "medium",
+            "duration": "2 weeks",
+            "team": "Programming",
+            "dueDate": "2026-11-18",
+            "color": "#3b82f6",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Templates",
+                "color": "#9C27B0"
+              },
+              {
+                "text": "Workflow",
+                "color": "#607D8B"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design template format",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement save/load system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create template browser",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add categorization",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Create starter templates",
+                "completed": false
+              },
+              {
+                "id": "c6",
+                "text": "Test sharing workflow",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task8-2",
+            "title": "Shift+Ctrl+Space Enable/Disable All",
+            "description": "<p>Fix the keyboard shortcut to properly enable/disable all effects in a system, persisting across save/load cycles.</p><p><strong>Issue:</strong> Currently only works in the same loaded instance. After save/close/reload, the shortcut fails to re-enable effects.</p><p><strong>Fix:</strong></p><ul><li>Persist disabled state</li><li>Proper enable/disable restoration</li><li>Visual feedback</li><li>Undo support</li></ul><p><em>[🎨 Artist Request - Severity: S4]</em></p>",
+            "priority": "low",
+            "duration": "2-3 days",
+            "team": "Programming",
+            "dueDate": "2026-11-23",
+            "color": "#10b981",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Shortcuts",
+                "color": "#FF9800"
+              },
+              {
+                "text": "Bug Fix",
+                "color": "#F44336"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Fix state persistence",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Test save/load cycle",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add visual feedback",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Implement undo",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage9",
+        "number": 9,
+        "title": "Timeline & Track View",
+        "duration": "3-4 weeks",
+        "tasks": [
+          {
+            "id": "task9-1",
+            "title": "Timeline View",
+            "description": "<p>Create a compositing-style track view for setting Emitter Lifetime and Spawn Delays across entire effect tree.</p><p><strong>Features:</strong></p><ul><li>Horizontal timeline display</li><li>Emitter tracks with lifetime bars</li><li>Drag to adjust timing</li><li>Spawn delay visualization</li><li>Playback scrubbing</li><li>Time markers</li><li>Zoom in/out timeline</li><li>Not for animating properties (just timing)</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-124141.png'>Timeline Example</a></p>",
+            "priority": "medium",
+            "duration": "3-4 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2026-12-21",
+            "color": "#3b82f6",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Track View",
+                "color": "#00BCD4"
+              },
+              {
+                "text": "Timeline",
+                "color": "#009688"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design timeline UI",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement track rendering",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add drag-to-adjust",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create playback scrubbing",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Add zoom controls",
+                "completed": false
+              },
+              {
+                "id": "c6",
+                "text": "Implement time markers",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage10",
+        "number": 10,
+        "title": "Undo System Improvements",
+        "duration": "2-3 weeks",
+        "tasks": [
+          {
+            "id": "task10-1",
+            "title": "Undo Takes You to Changed Value",
+            "description": "<p>Make undo functionality highlight and navigate to the feature/value that was changed.</p><p><strong>Features:</strong></p><ul><li>Auto-scroll to changed parameter</li><li>Highlight changed value</li><li>Visual diff indication</li><li>Undo history panel</li><li>Named undo actions</li></ul><p><em>[🎨 Artist Request - Severity: S3]</em></p>",
+            "priority": "medium",
+            "duration": "1 week",
+            "team": "Programming",
+            "dueDate": "2027-01-11",
+            "color": "#3b82f6",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Undo",
+                "color": "#FF5722"
+              },
+              {
+                "text": "UX",
+                "color": "#3F51B5"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement navigation on undo",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add highlight effects",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create undo history panel",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add named actions",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task10-2",
+            "title": "Revert to Previously Saved Value",
+            "description": "<p>Allow reverting a parameter to any previously saved value from backup files.</p><p><strong>Features:</strong></p><ul><li>Access backup history</li><li>Per-parameter revert</li><li>Preview before revert</li><li>Timestamp display</li><li>Diff visualization</li></ul><p><em>[🎨 Artist Request - Severity: S4]</em></p><p><strong>Note:</strong> This feature has uncertain feasibility (🫤) and needs further investigation.</p>",
+            "priority": "low",
+            "duration": "1-2 weeks",
+            "team": "Programming",
+            "dueDate": "2027-01-25",
+            "color": "#10b981",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Undo",
+                "color": "#FF5722"
+              },
+              {
+                "text": "History",
+                "color": "#607D8B"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Research feasibility",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Design backup access system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Implement revert UI",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add diff visualization",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage11",
+        "number": 11,
+        "title": "Viewport & Visualization",
+        "duration": "4-6 weeks",
+        "tasks": [
+          {
+            "id": "task11-1",
+            "title": "Viewport Callbacks & Gizmos",
+            "description": "<p>Expose callbacks for editor viewport to draw contextual gizmos for effect parameters.</p><p><strong>Features:</strong></p><ul><li>Custom gizmo drawing API</li><li>Context-sensitive gizmos</li><li>Interaction handles</li><li>Visual feedback</li><li>Examples: emission shape, direction cones, velocity fields</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/circular_1.mp4'>Circular Gizmo</a>, <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/horizontal_1.mp4'>Horizontal Gizmo</a></p>",
+            "priority": "high",
+            "duration": "2-3 weeks",
+            "team": "Programming/Graphics",
+            "dueDate": "2027-02-15",
+            "color": "#f59e0b",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Viewport",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Visualization",
+                "color": "#E91E63"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design gizmo API",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement callback system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create example gizmos",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add interaction handles",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Documentation",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task11-2",
+            "title": "Viewport Integration",
+            "description": "<p>Integrate a real viewport instance or create a 'Look-dev mode' for focused effect editing.</p><p><strong>Options:</strong></p><ul><li>Embedded viewport in editor</li><li>Fullscreen look-dev mode</li><li>Multi-viewport support</li><li>Camera presets</li><li>Background environment options</li><li>Grid and reference objects</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "high",
+            "duration": "3-4 weeks",
+            "team": "Programming/Graphics",
+            "dueDate": "2027-03-15",
+            "color": "#f59e0b",
+            "dependencies": ["task11-1"],
+            "labels": [
+              {
+                "text": "Viewport",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Integration",
+                "color": "#FF5722"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design viewport integration",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement embedded viewport",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create look-dev mode",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add camera presets",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Environment backgrounds",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task11-3",
+            "title": "Custom Viewport Manipulators",
+            "description": "<p>Add custom manipulators in viewport to directly control particle parameters.</p><p><strong>Examples:</strong></p><ul><li>Emission shape handles</li><li>Direction arrows</li><li>Size/scale widgets</li><li>Force field visualization</li><li>Path/trajectory curves</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "medium",
+            "duration": "2 weeks",
+            "team": "Programming/Graphics",
+            "dueDate": "2027-03-29",
+            "color": "#3b82f6",
+            "dependencies": ["task11-1"],
+            "labels": [
+              {
+                "text": "Viewport",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Manipulators",
+                "color": "#9C27B0"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design manipulator system",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement shape handles",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add direction controls",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create force field viz",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage12",
+        "number": 12,
+        "title": "Visibility Controls",
+        "duration": "1-2 weeks",
+        "tasks": [
+          {
+            "id": "task12-1",
+            "title": "Lock, Visible, Solo, Debug Draw Buttons",
+            "description": "<p>Add visibility control buttons in the library tree view (similar to After Effects or Unreal Engine).</p><p><strong>Controls:</strong></p><ul><li>Lock: Prevent editing</li><li>Visible: Show/hide in viewport</li><li>Solo: View only this effect</li><li>Debug Draw: Enable debug visualization</li></ul><p><strong>Features:</strong></p><ul><li>Per-effect controls</li><li>Hierarchical propagation</li><li>Keyboard shortcuts</li><li>Visual indicators</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200907-125450.png'>After Effects Example</a>, <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200907-125526.png'>Control Icons</a></p>",
+            "priority": "medium",
+            "duration": "1-2 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2027-04-12",
+            "color": "#3b82f6",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Visibility Controls",
+                "color": "#607D8B"
+              },
+              {
+                "text": "Tree View",
+                "color": "#8BC34A"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design control icons",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement lock system",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add visibility toggle",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create solo mode",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Implement debug draw",
+                "completed": false
+              },
+              {
+                "id": "c6",
+                "text": "Add keyboard shortcuts",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage13",
+        "number": 13,
+        "title": "Widget Improvements",
+        "duration": "3-4 weeks",
+        "tasks": [
+          {
+            "id": "task13-1",
+            "title": "Custom Widget System",
+            "description": "<p>Create extensible widget system allowing custom widgets for different data types.</p><p><strong>Features:</strong></p><ul><li>Widget registry</li><li>Per-parameter widget override</li><li>Plugin architecture</li><li>Widget templates</li><li>Custom styling</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-130132.png'>Angle Knob Widget</a></p>",
+            "priority": "medium",
+            "duration": "2 weeks",
+            "team": "Programming",
+            "dueDate": "2027-04-26",
+            "color": "#3b82f6",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Widgets",
+                "color": "#3F51B5"
+              },
+              {
+                "text": "Extensibility",
+                "color": "#FF9800"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design widget architecture",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement widget registry",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create plugin system",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Build example widgets",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Documentation",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task13-2",
+            "title": "Better Vector Widget",
+            "description": "<p>Improved vector widgets with proper XY, XYZ, XYZW notation and advanced features.</p><p><strong>Features:</strong></p><ul><li>Proper vector notation</li><li>Customizable component labels (XYZW, RGBA, etc.)</li><li>Padlock for uniform scaling</li><li>Copy/paste components</li><li>Normalize button</li><li>Magnitude display</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-131108.png'>Vec2</a>, <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-131126.png'>Vec3</a>, <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-131210.png'>Vec4</a></p>",
+            "priority": "medium",
+            "duration": "1 week",
+            "team": "UI/Programming",
+            "dueDate": "2027-05-03",
+            "color": "#3b82f6",
+            "dependencies": ["task13-1"],
+            "labels": [
+              {
+                "text": "Widgets",
+                "color": "#3F51B5"
+              },
+              {
+                "text": "Vector",
+                "color": "#009688"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design vector widget UI",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement component controls",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add padlock linking",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create label customization",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task13-3",
+            "title": "HDR Gradient Widget",
+            "description": "<p>In-engine HDR gradient editor to replace external heat map workflow.</p><p><strong>Features:</strong></p><ul><li>HDR color picking</li><li>Multiple gradient stops</li><li>Interpolation modes</li><li>Copy/paste gradients</li><li>Gradient presets</li><li>Alpha channel support</li></ul><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-150304.png'>Gradient Picker</a>, <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-150348.png'>Gradient Editor</a></p>",
+            "priority": "high",
+            "duration": "2 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2027-05-17",
+            "color": "#f59e0b",
+            "dependencies": ["task13-1"],
+            "labels": [
+              {
+                "text": "Widgets",
+                "color": "#3F51B5"
+              },
+              {
+                "text": "Color",
+                "color": "#E91E63"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design gradient UI",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement HDR color picker",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add stop management",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create preset library",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Alpha channel support",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage14",
+        "number": 14,
+        "title": "Workflow Tools",
+        "duration": "2-3 weeks",
+        "tasks": [
+          {
+            "id": "task14-1",
+            "title": "Parameter Filter/Finder",
+            "description": "<p>Advanced search and filter system for parameters.</p><p><strong>Features:</strong></p><ul><li>Search by name</li><li>Search by value</li><li>Filter by state (modified, inherited, default)</li><li>Filter by type</li><li>Recent parameters</li><li>Bookmarks</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "medium",
+            "duration": "1 week",
+            "team": "UI/Programming",
+            "dueDate": "2027-05-24",
+            "color": "#3b82f6",
+            "dependencies": ["task1-1"],
+            "labels": [
+              {
+                "text": "Workflow Tools",
+                "color": "#607D8B"
+              },
+              {
+                "text": "Search",
+                "color": "#00BCD4"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design search UI",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement name search",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Add value search",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create filter system",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Add bookmarks",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task14-2",
+            "title": "Parameter Checkpoints",
+            "description": "<p>Create custom undo checkpoints for A/B testing of changes.</p><p><strong>Features:</strong></p><ul><li>Named checkpoints</li><li>Quick restore</li><li>Checkpoint comparison</li><li>Checkpoint notes</li><li>Checkpoint history</li></ul><p><em>[💡 Programmer Suggestion]</em></p><p><strong>AI Suggestion:</strong> Add automatic checkpoints at key moments (before major changes, hourly, etc.) with the option to manually create named checkpoints.</p>",
+            "priority": "medium",
+            "duration": "1 week",
+            "team": "Programming",
+            "dueDate": "2027-05-31",
+            "color": "#3b82f6",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Workflow Tools",
+                "color": "#607D8B"
+              },
+              {
+                "text": "Version Control",
+                "color": "#4CAF50"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Design checkpoint system",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Implement checkpoint storage",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create restore UI",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add comparison tool",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Auto-checkpoint system",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task14-3",
+            "title": "Copy-Paste FX to XML Clipboard",
+            "description": "<p>Easy XML export of effects to clipboard for sharing (similar to Katana).</p><p><strong>Features:</strong></p><ul><li>Copy effect as XML</li><li>Paste from XML</li><li>Pretty-print formatting</li><li>Validation on paste</li><li>Selective property copy</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "low",
+            "duration": "3-5 days",
+            "team": "Programming",
+            "dueDate": "2027-06-07",
+            "color": "#10b981",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Workflow Tools",
+                "color": "#607D8B"
+              },
+              {
+                "text": "Copy/Paste",
+                "color": "#FF9800"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement XML serialization",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add clipboard integration",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create paste validation",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add selective copy",
+                "completed": false
+              }
+            ],
+            "images": []
+          },
+          {
+            "id": "task14-4",
+            "title": "Parameter Drag-Drop Support",
+            "description": "<p>Drag-drop parameters to create references or copy values.</p><p><strong>Features:</strong></p><ul><li>Drag to link parameters</li><li>Drag with modifier for copy value</li><li>Visual drag indicators</li><li>Drop validation</li><li>Multi-parameter drag</li></ul><p><em>[💡 Programmer Suggestion]</em></p>",
+            "priority": "low",
+            "duration": "1 week",
+            "team": "UI/Programming",
+            "dueDate": "2027-06-14",
+            "color": "#10b981",
+            "dependencies": ["task3-3"],
+            "labels": [
+              {
+                "text": "Workflow Tools",
+                "color": "#607D8B"
+              },
+              {
+                "text": "Drag-Drop",
+                "color": "#9C27B0"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Implement drag system",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Add drop targets",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Create visual feedback",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add validation",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage15",
+        "number": 15,
+        "title": "FX Overview (Optional)",
+        "duration": "3-4 weeks",
+        "tasks": [
+          {
+            "id": "task15-1",
+            "title": "Graph View Visualization Tool",
+            "description": "<p>Visual graph showing how effects are controlled by code inputs.</p><p><strong>Features:</strong></p><ul><li>Node-based visualization</li><li>Show input connections</li><li>Parameter flow display</li><li>Strength curve relationships</li><li>Interactive exploration</li></ul><p><strong>Example:</strong> Thruster effect strength curve controlled by 'thrust input', affecting color and speed curves.</p><p><em>[👨‍🦳 Old VFX Editor V2 Suggestion]</em></p><p><strong>Note:</strong> This feature has uncertain priority (🫤) and may not be essential.</p><p>Reference: <a href='https://cloudimperiumgames.atlassian.net/wiki/download/attachments/5205557249/image-20200721-145239.png'>Graph View Example</a></p>",
+            "priority": "low",
+            "duration": "3-4 weeks",
+            "team": "UI/Programming",
+            "dueDate": "2027-07-12",
+            "color": "#10b981",
+            "dependencies": ["task1-1", "task3-2"],
+            "labels": [
+              {
+                "text": "FX Overview",
+                "color": "#673AB7"
+              },
+              {
+                "text": "Visualization",
+                "color": "#E91E63"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Research feasibility",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Design graph visualization",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Implement node system",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Add connection tracking",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "User testing",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      },
+      {
+        "id": "stage16",
+        "number": 16,
+        "title": "Scripting Support (Future)",
+        "duration": "6-8 weeks",
+        "tasks": [
+          {
+            "id": "task16-1",
+            "title": "Scripting Support",
+            "description": "<p>Python scripting support for batch operations and automation.</p><p><strong>Use Cases:</strong></p><ul><li>Batch update emitter lifetime</li><li>Modify expressions to point to new sources</li><li>Batch move/rename textures</li><li>Gather effect statistics</li><li>Custom tools and workflows</li></ul><p><strong>Features:</strong></p><ul><li>Python API</li><li>Script editor</li><li>Script library</li><li>Toolbar integration</li><li>Documentation and examples</li></ul><p><em>[💡 Programmer Suggestion]</em></p><p><strong>Note:</strong> This feature has uncertain priority (🫤) and needs clear use cases before implementation.</p><p><strong>AI Suggestion:</strong> Start with a limited read-only API to gather use cases from artists, then expand to read-write functionality based on feedback.</p>",
+            "priority": "low",
+            "duration": "6-8 weeks",
+            "team": "Programming",
+            "dueDate": "2027-09-06",
+            "color": "#10b981",
+            "dependencies": ["task1-2"],
+            "labels": [
+              {
+                "text": "Scripting",
+                "color": "#4CAF50"
+              },
+              {
+                "text": "Automation",
+                "color": "#FF9800"
+              },
+              {
+                "text": "Future",
+                "color": "#9E9E9E"
+              }
+            ],
+            "checklist": [
+              {
+                "id": "c1",
+                "text": "Gather use cases",
+                "completed": false
+              },
+              {
+                "id": "c2",
+                "text": "Design API",
+                "completed": false
+              },
+              {
+                "id": "c3",
+                "text": "Implement Python integration",
+                "completed": false
+              },
+              {
+                "id": "c4",
+                "text": "Create script editor",
+                "completed": false
+              },
+              {
+                "id": "c5",
+                "text": "Write documentation",
+                "completed": false
+              },
+              {
+                "id": "c6",
+                "text": "Build example scripts",
+                "completed": false
+              }
+            ],
+            "images": []
+          }
+        ]
+      }
+    ]
+  },
+  "taskStatus": {
+  },
+  "taskNotes": {
+  }
+}

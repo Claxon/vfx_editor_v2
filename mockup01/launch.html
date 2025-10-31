@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VFX Editor v2.0 - Launch</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a1e 0%, #2d2d35 100%);
+            color: #e8e8ea;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .launcher {
+            max-width: 800px;
+            background: #25252a;
+            border: 2px solid #ff6b35;
+            border-radius: 16px;
+            padding: 48px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ff6b35, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #a8a8b0;
+            margin-bottom: 32px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .feature {
+            background: #1e1e24;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #3a3a42;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+        }
+
+        .feature-text {
+            font-size: 14px;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            color: #e8e8ea;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            color: #6e6e76;
+            font-size: 12px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b35, #f59e0b);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(255, 107, 53, 0.6);
+        }
+
+        .btn-secondary {
+            background: #2d2d35;
+            color: #e8e8ea;
+            border: 1px solid #3a3a42;
+        }
+
+        .btn-secondary:hover {
+            background: #3a3a42;
+            border-color: #4a4a52;
+        }
+
+        .note {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid #4ecdc4;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .note strong {
+            color: #4ecdc4;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="launcher">
+        <h1>🎨 VFX Editor v2.0</h1>
+        <p class="subtitle">Professional Particle System Interface Mockup</p>
+
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">📚</span>
+                <div class="feature-text">
+                    <div class="feature-title">Library Browser</div>
+                    <div class="feature-desc">Hierarchical tree with controls</div>
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✨</span>
+                <div class="feature-text">
+                    <div class="feature-title">Live Preview</div>
+                    <div class="feature-desc">Real-time particle animation</div>
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📈</span>
+                <div class="feature-text">
+                    <div class="feature-title">Curve Editor</div>
+                    <div class="feature-desc">Interactive spline editing</div>
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">⏱️</span>
+                <div class="feature-text">
+                    <div class="feature-title">Timeline View</div>
+                    <div class="feature-desc">Draggable emitter tracks</div>
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🎛️</span>
+                <div class="feature-text">
+                    <div class="feature-title">Parameters</div>
+                    <div class="feature-desc">Multiple control types</div>
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🧮</span>
+                <div class="feature-text">
+                    <div class="feature-title">Expressions</div>
+                    <div class="feature-desc">Math operations support</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>✨ Interactive Demo:</strong> This mockup demonstrates the complete UI/UX experience of the next-generation VFX Editor. 
+            All interactions are functional - click effects in the library, drag curve points, adjust sliders, and watch particles animate in real-time. 
+            While this doesn't compile actual VFX, it provides a production-ready preview of the editor's look and feel.
+        </div>
+
+        <div class="actions">
+            <a href="index.html" class="btn btn-primary pulse">
+                🚀 Launch VFX Editor
+            </a>
+            <a href="README.md" class="btn btn-secondary">
+                📖 Read Documentation
+            </a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,370 @@
+/* Checkpoint System Styles */
+
+.checkpoint-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkpoint-btn {
+    position: relative;
+}
+
+.checkpoint-btn.has-checkpoint::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    background: var(--accent-secondary);
+    border-radius: 50%;
+    box-shadow: 0 0 4px var(--accent-secondary);
+}
+
+.checkpoint-selector {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+}
+
+.checkpoint-quick-btn {
+    min-width: 48px;
+    height: 32px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    transition: 0.15s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    gap: 1px;
+}
+
+.checkpoint-label {
+    font-size: 8px;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.checkpoint-number {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.checkpoint-quick-btn:hover {
+    border-color: var(--accent-secondary);
+    background: var(--bg-secondary);
+    transform: translateY(-1px);
+}
+
+.checkpoint-quick-btn.active {
+    background: var(--accent-secondary);
+    border-color: var(--accent-secondary);
+    color: white;
+    box-shadow: 0 0 8px rgba(78, 205, 196, 0.5);
+}
+
+.checkpoint-quick-btn.has-data::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    box-shadow: 0 0 4px var(--accent-primary);
+}
+
+.checkpoint-quick-btn.has-data:not(.active)::after {
+    background: var(--accent-tertiary);
+    box-shadow: 0 0 4px var(--accent-tertiary);
+}
+
+/* Checkpoint Manager Modal */
+#checkpoint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkpoint-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: 0.15s ease;
+}
+
+.checkpoint-item:hover {
+    border-color: var(--border-light);
+}
+
+.checkpoint-item.active {
+    border-color: var(--accent-secondary);
+    background: rgba(78, 205, 196, 0.1);
+}
+
+.checkpoint-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.checkpoint-info {
+    flex: 1;
+}
+
+.checkpoint-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.checkpoint-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--accent-secondary);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.checkpoint-time {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.checkpoint-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.checkpoint-action-btn {
+    padding: 6px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: 0.15s ease;
+}
+
+.checkpoint-action-btn:hover {
+    background: var(--bg-panel);
+    border-color: var(--border-light);
+    color: var(--text-primary);
+}
+
+.checkpoint-action-btn.primary {
+    background: var(--accent-secondary);
+    border-color: var(--accent-secondary);
+    color: white;
+}
+
+.checkpoint-action-btn.primary:hover {
+    background: #3fb8b0;
+    border-color: #3fb8b0;
+}
+
+.checkpoint-action-btn.danger {
+    color: var(--status-error);
+}
+
+.checkpoint-action-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--status-error);
+}
+
+.checkpoint-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.checkpoint-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    font-size: 11px;
+}
+
+.checkpoint-stat {
+    padding: 6px;
+    background: var(--bg-panel);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.checkpoint-stat-label {
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.checkpoint-stat-value {
+    color: var(--accent-secondary);
+    font-weight: 600;
+}
+
+/* Checkpoint Comparison Mode */
+.comparison-mode-active .viewport-overlay {
+    border: 2px solid var(--accent-secondary);
+}
+
+.comparison-indicator {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: var(--accent-secondary);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(78, 205, 196, 0.4);
+    z-index: 1000;
+    display: none;
+    animation: slideIn 0.3s ease;
+}
+
+.comparison-mode-active .comparison-indicator {
+    display: block;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Keyboard Shortcuts Help */
+.shortcuts-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(78, 205, 196, 0.1);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.shortcuts-hint kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 10px;
+    margin: 0 2px;
+}
+
+/* Add Checkpoint Slot Button */
+.add-checkpoint-slot-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-color);
+    border-radius: 6px;
+    color: var(--accent-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s ease;
+    margin-bottom: 16px;
+}
+
+.add-checkpoint-slot-btn:hover {
+    border-color: var(--accent-secondary);
+    background: rgba(78, 205, 196, 0.1);
+}
+
+/* Checkpoint Slot Badge */
+.checkpoint-slot-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 8px;
+}
+
+.checkpoint-shortcut {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.checkpoint-shortcut kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 9px;
+    margin: 0 2px;
+}
+
+/* Update shortcuts hint styling */
+.shortcuts-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 16px;
+    background: rgba(78, 205, 196, 0.1);
+    border: 1px solid var(--accent-secondary);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    line-height: 1.8;
+}
+
+.shortcuts-hint strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.shortcuts-hint kbd {
+    display: inline-block;
+    padding: 3px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 11px;
+    margin: 0 2px;
+    font-weight: 600;
+}

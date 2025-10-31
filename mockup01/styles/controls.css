@@ -1,0 +1,354 @@
+/* Parameter Controls */
+
+.parameter-group {
+    margin-bottom: 16px;
+}
+
+.parameter-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.15s ease;
+    user-select: none;
+}
+
+.parameter-group-header:hover {
+    background: var(--bg-tertiary);
+}
+
+.parameter-group-toggle {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.parameter-group.collapsed .parameter-group-toggle {
+    transform: rotate(-90deg);
+}
+
+.parameter-group-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.parameter-group-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: 3px;
+}
+
+.parameter-group-content {
+    padding: 4px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.parameter-group.collapsed .parameter-group-content {
+    display: none;
+}
+
+/* Parameter Row */
+.parameter-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 10px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    transition: 0.15s ease;
+}
+
+.parameter-row:hover {
+    background: var(--bg-tertiary);
+}
+
+.parameter-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.parameter-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.parameter-state {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+}
+
+.parameter-state.default {
+    background: var(--bg-tertiary);
+}
+
+.parameter-state.modified {
+    background: var(--accent-secondary);
+}
+
+.parameter-state.inherited {
+    background: var(--accent-purple);
+}
+
+.parameter-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.param-icon-btn {
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s ease;
+}
+
+.param-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* Slider Control */
+.slider-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.slider-input {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    position: relative;
+    cursor: pointer;
+}
+
+.slider-track {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 3px;
+    position: relative;
+}
+
+.slider-handle {
+    width: 14px;
+    height: 14px;
+    background: white;
+    border: 2px solid var(--accent-primary);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    right: -7px;
+    transform: translateY(-50%);
+    cursor: grab;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.slider-handle:active {
+    cursor: grabbing;
+}
+
+.slider-value {
+    min-width: 60px;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 12px;
+    text-align: right;
+}
+
+/* Vector Control */
+.vector-control {
+    display: flex;
+    gap: 4px;
+}
+
+.vector-component {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vector-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.vector-input {
+    padding: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 12px;
+    text-align: center;
+    outline: none;
+}
+
+.vector-input:focus {
+    border-color: var(--accent-primary);
+}
+
+.vector-lock {
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vector-lock-btn {
+    width: 24px;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s ease;
+}
+
+.vector-lock-btn:hover {
+    border-color: var(--border-light);
+    color: var(--text-primary);
+}
+
+.vector-lock-btn.locked {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+/* Color Control */
+.color-control {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.color-swatch {
+    width: 40px;
+    height: 28px;
+    border-radius: 4px;
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    transition: 0.15s ease;
+    position: relative;
+}
+
+.color-swatch:hover {
+    border-color: var(--border-light);
+    transform: scale(1.05);
+}
+
+.color-value {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 11px;
+    font-family: monospace;
+}
+
+/* Dropdown Control */
+.dropdown-control {
+    position: relative;
+}
+
+.dropdown-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.15s ease;
+}
+
+.dropdown-btn:hover {
+    border-color: var(--border-light);
+    background: var(--bg-panel);
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+/* Checkbox Control */
+.checkbox-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s ease;
+}
+
+.checkbox:hover {
+    border-color: var(--border-light);
+}
+
+.checkbox.checked {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.checkbox-icon {
+    font-size: 12px;
+    color: white;
+    display: none;
+}
+
+.checkbox.checked .checkbox-icon {
+    display: block;
+}
+
+.checkbox-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
