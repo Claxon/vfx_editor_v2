@@ -1,6 +1,18 @@
 // Enhanced Particle Renderer - Fully reactive to parameters, curves, and timeline
 // ***** UPDATED to accept more physics parameters *****
+// ***** UPDATED to use internal parameter names (e.g., fParticleLifeTime) *****
 export class ParticleRenderer {
+    
+    // --- ADDED: List of parameters this 2D sim ACTUALLY uses ---
+    // This is checked by parameterManager to show ⚠️ on unused ones
+    static USED_PARAMS = [
+        'fCount', 'fParticleLifeTime', // Spawn
+        'eBlendType', 'cColor', 'fAlpha', 'fSize', // Appearance
+        'fSpeed', 'fGravityScale', 'fAirResistance', 'fDrag', 'fTurbulence', // Movement
+        'bZBufferCollision', 'bCollideStaticObjects', 'bCollideTerrainOnly' // Collision
+    ];
+    // --- END ADDITION ---
+
     constructor() {
         this.container = document.getElementById('particle-preview');
         this.canvas = null;
@@ -13,32 +25,35 @@ export class ParticleRenderer {
         this.currentEffect = null;
         
         // Effect parameters - now fully reactive
+        // *** UPDATED: Now uses internal CryEngine names ***
         this.effectParams = {
             // --- Default values ---
             // Spawn
-            'Count': 150,
-            'Burst Count': 25,
-            
-            // Timing
-            'Particle Lifetime': 2.5,
+            'fCount': 150,
+            'fParticleLifeTime': 2.5,
             
             // Appearance
-            'Color': { r: 255, g: 107, b: 53, a: 1 },
-            'Size': 1.0, // Base size
-            'Alpha': 0.85,
-            'Blend Mode': 'additive',
+            'cColor': { r: 255, g: 107, b: 53, a: 1 }, // Note: cColor is custom
+            'fSize': 1.0, // Base size
+            'fAlpha': 0.85,
+            'eBlendType': 'Additive',
             
             // Movement
-            'Velocity': { x: 0, y: 0, z: 5 }, // This is a vector, but Speed param will override
-            'Speed': 5.0, // Scalar speed
-            'Gravity Scale': 0.0,
-            'Air Resistance': 0.1, // Mapped to drag
-            'Drag': 0.1,
-            'Turbulence': 0.3,
+            'fSpeed': 5.0, // Scalar speed
+            'fGravityScale': 0.0,
+            'fAirResistance': 0.1, // Mapped to drag
+            'fDrag': 0.1,
+            'fTurbulence': 0.3,
             
             // Collision
-            'Use Collisions': true, // Mapped from collision params
-            'Cast Shadows': false
+            'bZBufferCollision': true,
+            'bCollideStaticObjects': true,
+            'bCollideTerrainOnly': true,
+            
+            // Unused by this sim (will get ⚠️ icon)
+            'bCastShadows': false,
+            'vVelocity': { x: 0, y: 0, z: 5 },
+            'fBurstCount': 25 // Example of an unused param
         };
         
         // Curves for animated parameters - fully integrated
@@ -175,60 +190,30 @@ export class ParticleRenderer {
             Object.assign(this.timelineData, effectData.timeline);
         }
         
+        // *** FIX: Handle legacy color or saved color object ***
+        if (typeof this.effectParams.cColor === 'string') {
+            this.setColorFromHex(this.effectParams.cColor);
+        }
+        
         this.reset();
     }
     
     updateParameter(data) {
+        // *** UPDATED: This function now receives the internal name (data.name) ***
         console.log('🎛️ Updating particle renderer with parameter:', data.name, '=', data.value);
         
-        // Map parameter names (labels from parameterManager) to effect params with immediate reactivity
-        // ***** This is the UPDATED map to fix problem 1 *****
-        const paramMap = {
-            // Spawn
-            'Count': (val) => this.effectParams['Count'] = val,
-            'Burst Count': (val) => this.effectParams['Burst Count'] = val,
-
-            // Timing
-            'Particle Lifetime': (val) => this.effectParams['Particle Lifetime'] = val,
-            
-            // Appearance
-            'Color': (val) => {
-                this.setColorFromHex(val);
-                console.log('  → Color now:', this.effectParams['Color']);
-            },
-            'Size': (val) => this.effectParams['Size'] = val,
-            'Alpha': (val) => this.effectParams['Alpha'] = val,
-            'Blend Mode': (val) => {
-                this.effectParams['Blend Mode'] = val.toLowerCase();
-                console.log('  → Blend mode now:', this.effectParams['Blend Mode']);
-            },
-
-            // Movement
-            'Speed': (val) => this.effectParams['Speed'] = val,
-            'Velocity': (val) => this.effectParams['Velocity'] = { x: val[0], y: val[1], z: val[2] },
-            'Gravity Scale': (val) => this.effectParams['Gravity Scale'] = val,
-            'Air Resistance': (val) => this.effectParams['Air Resistance'] = val,
-            'Drag': (val) => this.effectParams['Drag'] = val,
-            'Turbulence': (val) => this.effectParams['Turbulence'] = val,
-
-            // Collision
-            'Z-Buffer Collision': (val) => this.effectParams['Use Collisions'] = val,
-            'CollideStaticObjects': (val) => this.effectParams['Use Collisions'] = val,
-            'CollideTerrainOnly': (val) => this.effectParams['Use Collisions'] = val,
-
-            // Lighting
-            'Cast Shadows': (val) => this.effectParams['Cast Shadows'] = val
-        };
-        
-        // Dynamically update any parameter in effectParams, even if not in the map
+        // Dynamically update any parameter in effectParams
         // This makes it fully reactive.
         this.effectParams[data.name] = data.value;
 
         // Use the map for specific logic (like color conversion)
-        if (paramMap[data.name]) {
-            paramMap[data.name](data.value);
+        if (data.name === 'cColor') {
+            this.setColorFromHex(data.value);
+            console.log('  → Color now:', this.effectParams['cColor']);
+        } else if (data.name === 'eBlendType') {
+             this.effectParams['eBlendType'] = data.value.toLowerCase();
+             console.log('  → Blend mode now:', this.effectParams['eBlendType']);
         } else {
-            // Generic update for any other parameter
             console.log(`  → Generic update for "${data.name}"`);
         }
         
@@ -279,11 +264,15 @@ export class ParticleRenderer {
     setColorFromHex(hex) {
         if (typeof hex !== 'string' || !hex.startsWith('#')) {
              console.warn('Invalid color format for hex:', hex);
+             // Handle color objects being passed in
+             if (typeof hex === 'object' && hex.r !== undefined) {
+                 this.effectParams['cColor'] = { ...hex, a: 1 };
+             }
              return;
         }
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         if (result) {
-            this.effectParams['Color'] = {
+            this.effectParams['cColor'] = {
                 r: parseInt(result[1], 16),
                 g: parseInt(result[2], 16),
                 b: parseInt(result[3], 16),
@@ -333,7 +322,10 @@ export class ParticleRenderer {
     }
     
     createParticle() {
-        const speed = this.effectParams['Speed'] || 0;
+        // *** UPDATED: Use correct internal names ***
+        const speed = this.effectParams['fSpeed'] || 0;
+        const turbulence = this.effectParams['fTurbulence'] || 0;
+        const color = this.effectParams['cColor'] || { r: 255, g: 255, b: 255, a: 1 };
 
         const particle = {
             // Position (with some spawn variance)
@@ -342,24 +334,23 @@ export class ParticleRenderer {
             z: 0,
             
             // Velocity - now with full parameter support
-            vx: (this.effectParams['Velocity']?.x || 0) + (Math.random() - 0.5) * 2,
+            vx: (this.effectParams['vVelocity']?.x || 0) + (Math.random() - 0.5) * 2,
             vy: -(speed) - Math.random() * 2, // Use Speed for vertical velocity
-            vz: (this.effectParams['Velocity']?.z || 0),
+            vz: (this.effectParams['vVelocity']?.z || 0),
             
             // Properties - responsive to all parameters
-            lifetime: this.effectParams['Particle Lifetime'] * (0.8 + Math.random() * 0.4),
+            lifetime: this.effectParams['fParticleLifeTime'] * (0.8 + Math.random() * 0.4),
             age: 0,
-            size: this.effectParams['Size'] * (0.8 + Math.random() * 0.4),
-            opacity: this.effectParams['Alpha'],
+            size: this.effectParams['fSize'] * (0.8 + Math.random() * 0.4),
+            opacity: this.effectParams['fAlpha'],
             
             // Visual - full color support
-            color: { ...this.effectParams['Color'] },
+            color: { ...color },
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 0.1
         };
         
         // Apply initial turbulence
-        const turbulence = this.effectParams['Turbulence'] || 0;
         if (turbulence > 0) {
             particle.vx += (Math.random() - 0.5) * turbulence * 10;
             particle.vy += (Math.random() - 0.5) * turbulence * 10;
@@ -372,7 +363,8 @@ export class ParticleRenderer {
     }
     
     createBurst() {
-        const burstCount = this.effectParams['Burst Count'] || 0;
+        // *** UPDATED: Use correct internal name ***
+        const burstCount = this.effectParams['fBurstCount'] || 0;
         if (burstCount === 0) return;
         
         console.log(`💥 Creating burst of ${burstCount} particles`);
@@ -406,8 +398,9 @@ export class ParticleRenderer {
         // Check if emitter should be active based on timeline
         const timelineActive = this.isEmitterActiveAtTime(this.timelineData.currentTime);
         
+        // *** UPDATED: Use correct internal name ***
         // Spawn new particles based on spawn rate (if emitter and timeline allow)
-        const spawnRate = this.effectParams['Count'] || 0;
+        const spawnRate = this.effectParams['fCount'] || 0;
         if (this.emitterActive && timelineActive && this.particleCount < this.maxParticles) {
             this.spawnAccumulator += this.deltaTime * spawnRate;
             while (this.spawnAccumulator >= 1) {
@@ -416,8 +409,9 @@ export class ParticleRenderer {
             }
         }
         
+        // *** UPDATED: Use correct internal name ***
         // Handle burst spawning if burst count is set
-        if (this.effectParams['Burst Count'] > 0 && timelineActive) {
+        if (this.effectParams['fBurstCount'] > 0 && timelineActive) {
             this.burstTimer += this.deltaTime;
             if (this.burstTimer >= 1.0) { // Burst every second
                 this.createBurst();
@@ -426,10 +420,11 @@ export class ParticleRenderer {
         }
         
         // --- Get physics values once ---
-        const gravity = (this.effectParams['Gravity Scale'] || 0) * 9.8; // Note: CryEngine uses scale, sim uses acceleration
-        const drag = this.effectParams['Drag'] || this.effectParams['Air Resistance'] || 0;
-        const turbulence = this.effectParams['Turbulence'] || 0;
-        const useCollisions = this.effectParams['Use Collisions'] || false;
+        // *** UPDATED: Use correct internal names ***
+        const gravity = (this.effectParams['fGravityScale'] || 0) * 9.8; // Note: CryEngine uses scale, sim uses acceleration
+        const drag = this.effectParams['fDrag'] || this.effectParams['fAirResistance'] || 0;
+        const turbulence = this.effectParams['fTurbulence'] || 0;
+        const useCollisions = this.effectParams['bZBufferCollision'] || this.effectParams['bCollideStaticObjects'] || this.effectParams['bCollideTerrainOnly'] || false;
         
         // Update existing particles with full curve support
         for (let i = this.particles.length - 1; i >= 0; i--) {
@@ -446,16 +441,18 @@ export class ParticleRenderer {
                 continue;
             }
             
+            // *** UPDATED: Use correct internal names ***
             // Apply size curve - FULLY REACTIVE
             if (this.curves.size && this.curves.size.length > 0) {
                 const curveValue = this.evaluateCurve(this.curves.size, lifeRatio);
-                p.size = this.effectParams['Size'] * curveValue * (0.8 + Math.random() * 0.4);
+                p.size = this.effectParams['fSize'] * curveValue * (0.8 + Math.random() * 0.4);
             }
             
+            // *** UPDATED: Use correct internal names ***
             // Apply opacity curve - FULLY REACTIVE
             if (this.curves.opacity && this.curves.opacity.length > 0) {
                 const curveValue = this.evaluateCurve(this.curves.opacity, lifeRatio);
-                p.opacity = this.effectParams['Alpha'] * curveValue;
+                p.opacity = this.effectParams['fAlpha'] * curveValue;
             }
             
             // Apply velocity curve - FULLY REACTIVE
@@ -466,14 +463,15 @@ export class ParticleRenderer {
                 p.vy *= velocityScale;
             }
             
+            // *** UPDATED: Use correct internal name ***
             // Apply color curve if available
             if (this.curves.color && this.curves.color.length > 0) {
                 const colorMult = this.evaluateCurve(this.curves.color, lifeRatio);
                 p.color = {
-                    r: this.effectParams['Color'].r * colorMult,
-                    g: this.effectParams['Color'].g * colorMult,
-                    b: this.effectParams['Color'].b * colorMult,
-                    a: this.effectParams['Color'].a
+                    r: this.effectParams['cColor'].r * colorMult,
+                    g: this.effectParams['cColor'].g * colorMult,
+                    b: this.effectParams['cColor'].b * colorMult,
+                    a: this.effectParams['cColor'].a
                 };
             }
             
@@ -529,18 +527,19 @@ export class ParticleRenderer {
         this.ctx.fillStyle = 'rgba(37, 37, 42, 0.15)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
+        // *** UPDATED: Use correct internal name ***
         // Set blend mode - FULLY REACTIVE TO PARAMETER
-        const blendMode = this.effectParams['Blend Mode'] || 'additive';
-        if (blendMode === 'additive') {
-            this.ctx.globalCompositeOperation = 'screen';
-        } else if (blendMode === 'multiply' || blendMode === 'multiplicative') {
+        const blendMode = this.effectParams['eBlendType'] || 'Additive';
+        if (blendMode.toLowerCase() === 'additive') {
+            this.ctx.globalCompositeOperation = 'screen'; // 'screen' is often used for additive
+        } else if (blendMode.toLowerCase() === 'multiplicative') {
             this.ctx.globalCompositeOperation = 'multiply';
-        } else if (blendMode === 'screen') {
+        } else if (blendMode.toLowerCase() === 'screen') {
             this.ctx.globalCompositeOperation = 'screen';
-        } else if (blendMode === 'overlay') {
+        } else if (blendMode.toLowerCase() === 'overlay') {
             this.ctx.globalCompositeOperation = 'overlay';
         } else {
-            this.ctx.globalCompositeOperation = 'source-over'; // AlphaBlend
+            this.ctx.globalCompositeOperation = 'source-over'; // AlphaBlend / Opaque
         }
         
         // Sort particles by Z for depth

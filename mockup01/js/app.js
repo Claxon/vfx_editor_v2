@@ -36,7 +36,8 @@ class VFXEditor {
         this.libraryManager.init();
         
         // *** MODIFICATION: Await the async init of ParameterManager ***
-        await this.parameterManager.init(); 
+        // *** Pass the list of used parameters from the renderer to the param manager ***
+        await this.parameterManager.init(ParticleRenderer.USED_PARAMS); 
         
         // *** FIX: Await the new async init of CryEngineExporter ***
         await this.exporter.init();
@@ -290,7 +291,9 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
     }
 
     onParameterChanged(data) {
-        console.log('Parameter changed:', data);
+        // *** UPDATED: data.name is now the internal name (e.g., fParticleLifeTime) ***
+        console.log('Parameter changed:', data.name, data.value);
+        
         // Update particle preview with new parameter
         this.particleRenderer.updateParameter(data);
         
@@ -666,4 +669,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.vfxEditor = new VFXEditor();
     await window.vfxEditor.init(); // Call the new async init
 });
-

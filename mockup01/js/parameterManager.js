@@ -1,6 +1,7 @@
 // Enhanced Parameter Manager - XML-Driven
 // This manager now reads from an external XML definition via the
 // CryEngineParameterParser and uses a WidgetFactory to build the UI.
+// *** UPDATED to show ⚠️ for unused parameters ***
 
 import { CryEngineParameterParser } from './cryEngineParameterParser.js';
 import { WidgetFactory } from './WidgetFactory.js';
@@ -11,6 +12,7 @@ export class ParameterManager {
         this.currentEffect = null;
         this.parser = new CryEngineParameterParser();
         this.parameterElements = new Map(); // Stores widget elements by param name
+        this.usedParams = new Set(); // Stores set of params used by renderer
         
         // Expression system (remains the same)
         this.expressions = new Map();
@@ -22,9 +24,15 @@ export class ParameterManager {
 
     /**
      * Asynchronously initializes the manager by loading XML definitions.
+     * @param {Array<string>} usedParamsList - List of param names used by the renderer.
      */
-    async init() {
+    async init(usedParamsList = []) {
         console.log('🎛️ Initializing XML-Driven Parameter Manager');
+        
+        // Store the list of parameters that the renderer simulation uses
+        this.usedParams = new Set(usedParamsList);
+        console.log(`  Renderer uses ${this.usedParams.size} parameters.`);
+        
         await this.parser.loadDefinitions('parameters.xml');
         this.setupExpressionHandlers(); // Keep expression handlers
         this.render();
@@ -99,10 +107,17 @@ export class ParameterManager {
         paramEl.className = 'parameter-row';
         paramEl.dataset.paramName = param.name; // Use export name as data-attr
 
+        // --- ADDED: Check if parameter is used by the 2D sim ---
+        const isUsed = this.usedParams.has(param.name);
+        const unusedIcon = isUsed ? '' : `
+            <span class="unused-param-icon" title="This parameter is not used by the 2D simulation preview. It will still be exported.">⚠️</span>
+        `;
+        // --- END ADDITION ---
+
         const header = document.createElement('div');
         header.className = 'parameter-header';
         header.innerHTML = `
-            <span class="parameter-label">${param.label}</span>
+            <span class="parameter-label">${param.label}${unusedIcon}</span>
             <div class="parameter-controls">
                 <div class="parameter-state default" title="Default"></div>
                 <button class="param-icon-btn reset-btn" title="Reset to Default">↺</button>
@@ -173,7 +188,14 @@ export class ParameterManager {
                     if (paramDef) {
                         this.setParameterValue(paramDef.name, value);
                     } else {
-                        console.warn(`Parameter "${name}" from save data not found in XML definitions.`);
+                        // This might be a param from an old file, or the label name
+                        // Try finding by label
+                        const paramDefByLabel = this.parser.getParameter(name);
+                        if (paramDefByLabel) {
+                             this.setParameterValue(paramDefByLabel.name, value);
+                        } else {
+                            console.warn(`Parameter "${name}" from save data not found in XML definitions.`);
+                        }
                     }
                 });
                 console.log('✅ Loaded parameters for', effectData.name);
@@ -599,8 +621,16 @@ export class ParameterManager {
         if (label) {
             const paramDef = this.parser.getParameter(paramName);
             const name = paramDef ? paramDef.label : paramName; // Use display name
+            
+            // --- ADDED: Check if parameter is used by the 2D sim ---
+            const isUsed = this.usedParams.has(paramName);
+            const unusedIcon = isUsed ? '' : `
+                <span class="unused-param-icon" title="This parameter is not used by the 2D simulation preview. It will still be exported.">⚠️</span>
+            `;
+            // --- END ADDITION ---
+
             label.innerHTML = `
-                ${name}
+                ${name}${unusedIcon}
                 ${hasExpression ? '<span class="expr-indicator" title="Has expression">ƒx</span>' : ''}
                 ${isReferenced ? '<span class="ref-indicator" title="Referenced">🔗</span>' : ''}
             `;
@@ -625,9 +655,14 @@ export class ParameterManager {
     }
     
     dispatchParameterChange(name, value) {
+        // ** UPDATED: Send the internal name (e.g. fParticleLifeTime) **
         console.log('📤 Parameter changed:', name, '=', value);
         document.dispatchEvent(new CustomEvent('parameterChanged', {
-            detail: { name, value }
+            detail: { 
+                name: name, // Internal name
+                value: value,
+                label: this.parser.getParameter(name)?.label || name // Display name (for info)
+            }
         }));
     }
 
@@ -701,4 +736,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-

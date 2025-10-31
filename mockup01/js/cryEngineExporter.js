@@ -2,6 +2,7 @@
 // Exports to actual CryEngine particle library XML format
 // ***** UPDATED to export ALL non-default parameters and expressions *****
 // ***** UPDATED with async init to load XML definitions *****
+// ***** UPDATED with exportAllParameters toggle *****
 
 import { CryEngineParameterParser } from './cryEngineParameterParser.js';
 
@@ -9,6 +10,13 @@ export class CryEngineExporter {
     constructor() {
         this.sandboxVersion = '1.0.151.20733';
         this.particleVersion = '53';
+        
+        // ***** SET THIS TO TRUE TO WRITE ALL PARAMETERS *****
+        // This is the toggle you asked about.
+        // Set to true: Writes all parameters from the XML definition.
+        // Set to false: Writes only parameters that are not at their default value.
+        this.exportAllParameters = false; 
+        // ******************************************************
         
         // Initialize the parser, but DO NOT load definitions here
         this.parser = new CryEngineParameterParser();
@@ -90,8 +98,15 @@ export class CryEngineExporter {
             const definition = this.parser.getParameter(paramName);
             
             if (!definition) {
-                console.warn(`Export warning: Parameter "${paramName}" not found in XML definitions. Skipping.`);
-                continue;
+                // This could be a param from a label, try finding it
+                const defByLabel = this.parser.getParameter(paramName);
+                if (defByLabel) {
+                     // We found it by label, but we need to use its *internal name*
+                     // This block is unlikely to be hit now, but good for safety.
+                } else {
+                    console.warn(`Export warning: Parameter "${paramName}" not found in XML definitions. Skipping.`);
+                    continue;
+                }
             }
 
             // Get the *actual* parameter name from the definition (e.g., "fParticleLifeTime")
@@ -114,9 +129,11 @@ export class CryEngineExporter {
 
             // Compare current value to default value
             // We use JSON.stringify for a decent deep-ish comparison
-            if (JSON.stringify(currentValue) !== JSON.stringify(defaultValue))
+            const isDefault = JSON.stringify(currentValue) === JSON.stringify(defaultValue);
+            
+            if (!isDefault || this.exportAllParameters)
 			{
-                // Value is non-default, write it to XML
+                // Value is non-default OR exportAll is true, write it to XML
                 attrs += ` ${this.escapeXML(actualParamName)}="${this.formatValue(currentValue)}"`;
             }
         }
@@ -279,7 +296,9 @@ export class CryEngineExporter {
                          break;
                  }
                  
-                 if (JSON.stringify(currentValue) !== JSON.stringify(defaultValue)) {
+                 const isDefault = JSON.stringify(currentValue) === JSON.stringify(defaultValue);
+                 
+                 if (!isDefault || this.exportAllParameters) {
                      preview += `    • ${definition.label || paramName}: ${this.formatValue(currentValue)}\n`;
                      nonDefaultCount++;
                  }
