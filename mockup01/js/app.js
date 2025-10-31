@@ -9,6 +9,7 @@ import menuManager from './menus.js';
 import checkpointManager from './checkpoints.js';
 import keyboardShortcuts from './keyboardShortcuts.js';
 import resizeManager from './resizeManager.js';
+import { WidgetFactory } from './WidgetFactory.js'; // Import the new factory
 
 class VFXEditor {
     constructor() {
@@ -17,24 +18,29 @@ class VFXEditor {
         this.curveEditor = new CurveEditor();
         this.timelineManager = new TimelineManager();
         this.particleRenderer = new ParticleRenderer();
-        this.exporter = new CryEngineExporter();
+        this.exporter = new CryEngineExporter(); // Create instance
         
         this.selectedEffect = null;
         this.currentLibrary = null;
         this.effectsData = [];
         
-        this.init();
+        // Don't call init() here anymore, it will be called externally
     }
 
-    init() {
+    async init() {
         console.log('🎨 Initializing VFX Editor v2.0 with CryEngine 3 Export...');
         
-        // Initialize tab switching
         this.initTabSwitching();
         
         // Initialize all managers
         this.libraryManager.init();
-        this.parameterManager.init();
+        
+        // *** MODIFICATION: Await the async init of ParameterManager ***
+        await this.parameterManager.init(); 
+        
+        // *** FIX: Await the new async init of CryEngineExporter ***
+        await this.exporter.init();
+        
         this.curveEditor.init(this);
         this.timelineManager.init();
         this.particleRenderer.init();
@@ -400,13 +406,16 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
             console.log('  No library effects found, capturing current effect from particle renderer...');
             const currentState = this.particleRenderer.exportState();
             
+            // Get expressions from parameter manager
+            const expressions = this.parameterManager.exportExpressions();
+            
             const effectData = {
                 name: currentState.effectName || this.selectedEffect?.name || 'Current_Effect',
                 effectName: currentState.effectName,
                 params: { ...currentState.params },
+                expressions: expressions, // Add expressions
                 curves: { ...currentState.curves },
                 timeline: { ...currentState.timeline },
-                texture: 'textures/vfx/hologram/tiled/holo_tiled_grid_single.tif',
                 children: []
             };
             
@@ -424,33 +433,25 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                 console.log('    Found effect:', item.name);
                 
                 // Create effect data with default parameters
+                // This is now less relevant as params are loaded on-demand,
+                // but good for a base structure.
                 const effectData = {
                     name: item.name,
-                    params: {
-                        spawnRate: 150,
-                        lifetime: 2.5,
-                        color: { r: 255, g: 107, b: 53, a: 1 },
-                        size: { x: 1.0, y: 1.0, z: 1.0 },
-                        opacity: 0.85,
-                        blendMode: 'additive',
-                        velocity: { x: 0, y: 0, z: 5 },
-                        gravity: -9.8,
-                        drag: 0.1,
-                        turbulence: 0.3,
-                        useCollisions: false,
-                        castShadows: false
-                    },
+                    params: {}, // Start with empty params
+                    expressions: {},
                     curves: {},
                     timeline: { duration: 5, tracks: [] },
-                    texture: 'textures/vfx/hologram/tiled/holo_tiled_grid_single.tif',
                     children: []
                 };
                 
-                // If this is the currently selected effect, use live data from renderer
+                // If this is the currently selected effect, use live data
                 if (this.selectedEffect?.name === item.name) {
-                    console.log('      → Using live data from particle renderer');
+                    console.log('      → Using live data from particle renderer and param manager');
                     const currentState = this.particleRenderer.exportState();
+                    const expressions = this.parameterManager.exportExpressions();
+                    
                     effectData.params = { ...currentState.params };
+                    effectData.expressions = expressions;
                     effectData.curves = { ...currentState.curves };
                     effectData.timeline = { ...currentState.timeline };
                 }
@@ -661,6 +662,8 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
 }
 
 // Initialize the editor when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.vfxEditor = new VFXEditor();
+    await window.vfxEditor.init(); // Call the new async init
 });
+

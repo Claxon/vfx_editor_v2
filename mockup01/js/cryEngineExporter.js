@@ -1,6 +1,7 @@
 // CryEngine Particle Effect Exporter - Correct Format
 // Exports to actual CryEngine particle library XML format
 // ***** UPDATED to export ALL non-default parameters and expressions *****
+// ***** UPDATED with async init to load XML definitions *****
 
 import { CryEngineParameterParser } from './cryEngineParameterParser.js';
 
@@ -9,10 +10,19 @@ export class CryEngineExporter {
         this.sandboxVersion = '1.0.151.20733';
         this.particleVersion = '53';
         
-        // Initialize the parser to access default values
+        // Initialize the parser, but DO NOT load definitions here
         this.parser = new CryEngineParameterParser();
-        this.parser.parse('All'); // Parse all params to get definitions
-        console.log('CryEngineExporter initialized with full parameter parser.');
+        console.log('CryEngineExporter created.');
+    }
+
+    /**
+     * Asynchronously loads the parameter definitions from the XML file.
+     * This MUST be called before any export operations.
+     */
+    async init() {
+        // Load definitions from the same XML file as the parameter manager
+        await this.parser.loadDefinitions('parameters.xml');
+        console.log('CryEngineExporter initialized with full parameter parser definitions.');
     }
     
     // Generate a GUID for particle effects
@@ -72,28 +82,40 @@ export class CryEngineExporter {
         
         // --- Default Inheritance and System ---
         attrs += ' Inheritance="System"';
-        attrs += ' ParticleSystem="CryEngine"'; // Assuming CryEngine, could be 'RParticleGPU'
+        // TODO: This should be dynamic based on the parameter definition
+        attrs += ' ParticleSystem="RParticleGPU"'; 
         
         // --- Export All Non-Default Values ---
         for (const [paramName, currentValue] of Object.entries(params)) {
             const definition = this.parser.getParameter(paramName);
             
             if (!definition) {
-                // Parameter from params doesn't exist in parser (e.g., an old param)
-                // We'll write it just in case, using its label
-                const paramLabel = this.findLabelForParam(paramName);
-                if (paramLabel) {
-                     attrs += ` ${this.escapeXML(paramLabel)}="${this.formatValue(currentValue)}"`;
-                }
+                console.warn(`Export warning: Parameter "${paramName}" not found in XML definitions. Skipping.`);
                 continue;
             }
 
-            // Get the *actual* parameter name from the definition (not the label)
+            // Get the *actual* parameter name from the definition (e.g., "fParticleLifeTime")
             const actualParamName = definition.name;
-            const defaultValue = definition.value;
+            let defaultValue = definition.default;
+
+            // Convert default value from string to the correct type for comparison
+            switch (definition.type) {
+                case 'float':
+                case 'int':
+                    defaultValue = parseFloat(defaultValue);
+                    break;
+                case 'bool':
+                    defaultValue = (defaultValue === 'true');
+                    break;
+                case 'vec3':
+                    defaultValue = defaultValue.split(',').map(Number);
+                    break;
+            }
 
             // Compare current value to default value
-            if (JSON.stringify(currentValue) !== JSON.stringify(defaultValue)) {
+            // We use JSON.stringify for a decent deep-ish comparison
+            if (JSON.stringify(currentValue) !== JSON.stringify(defaultValue))
+			{
                 // Value is non-default, write it to XML
                 attrs += ` ${this.escapeXML(actualParamName)}="${this.formatValue(currentValue)}"`;
             }
@@ -112,30 +134,15 @@ export class CryEngineExporter {
     }
 
     /**
-     * Finds the parameter definition label (e.g., "Particle Lifetime") for a given internal name (e.g., "fParticleLifeTime")
-     * This is a fallback for the exporter, but the parameter manager should ideally send the correct names.
-     */
-    findLabelForParam(internalName) {
-         for (const group of this.parser.parameterGroups) {
-             for (const param of group.parameters) {
-                 if (param.name === internalName) {
-                     return param.label || param.name;
-                 }
-             }
-         }
-         // Fallback: try to find by label (which is what the simple manager uses)
-         const definition = this.parser.getParameter(internalName);
-         if (definition) return definition.name;
-         
-         return internalName; // Last resort
-    }
-
-    /**
      * Formats a JavaScript value into a string suitable for CryEngine XML.
      * @param {*} value - The value to format.
      */
     formatValue(value) {
         if (typeof value === 'string') {
+            // Handle color strings
+            if (value.startsWith('#')) {
+                return this.formatValue(this.hexToRgb(value));
+            }
             return this.escapeXML(value);
         }
         if (typeof value === 'boolean') {
@@ -156,10 +163,6 @@ export class CryEngineExporter {
                 const g = (value.g / 255).toFixed(3);
                 const b = (value.b / 255).toFixed(3);
                 return `${r},${g},${b}`;
-            }
-            // Handle simple hex color strings
-            if (typeof value === 'string' && value.startsWith('#')) {
-                return this.formatValue(this.hexToRgb(value));
             }
         }
         
@@ -229,10 +232,11 @@ export class CryEngineExporter {
         }
         
         if (effect.params) {
-            if (effect.params['Particle Lifetime'] !== undefined && effect.params['Particle Lifetime'] <= 0) {
+            // Use the correct parameter name from XML
+            if (effect.params['fParticleLifeTime'] !== undefined && effect.params['fParticleLifeTime'] <= 0) {
                 errors.push('Lifetime must be greater than 0');
             }
-            if (effect.params['Count'] !== undefined && effect.params['Count'] < 0) {
+            if (effect.params['fCount'] !== undefined && effect.params['fCount'] < 0) {
                 errors.push('Count cannot be negative');
             }
         }
@@ -260,7 +264,21 @@ export class CryEngineExporter {
                  const definition = this.parser.getParameter(paramName);
                  if (!definition) continue;
                  
-                 const defaultValue = definition.value;
+                 let defaultValue = definition.default;
+                 // Convert default value from string to the correct type for comparison
+                 switch (definition.type) {
+                     case 'float':
+                     case 'int':
+                         defaultValue = parseFloat(defaultValue);
+                         break;
+                     case 'bool':
+                         defaultValue = (defaultValue === 'true');
+                         break;
+                     case 'vec3':
+                         defaultValue = defaultValue.split(',').map(Number);
+                         break;
+                 }
+                 
                  if (JSON.stringify(currentValue) !== JSON.stringify(defaultValue)) {
                      preview += `    • ${definition.label || paramName}: ${this.formatValue(currentValue)}\n`;
                      nonDefaultCount++;

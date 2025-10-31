@@ -1,0 +1,49 @@
+<Parameters>
+  <Group name="Spawn" displayName="Spawn">
+    <Param name="bEnabled" displayName="Enabled" type="bool" default="true" widget="checkbox" />
+    <Param name="fCount" displayName="Count" type="float" default="100" widget="slider" min="0" max="10000" step="1" />
+    <Param name="fParticleLifeTime" displayName="Particle Lifetime" type="float" default="2.5" widget="slider" min="0" max="10" step="0.1" />
+    <Param name="eSpawn" displayName="Spawn Mode" type="enum" default="Direct" widget="dropdown">
+      <Option>Direct</Option>
+      <Option>ParentStart</Option>
+      <Option>ParentCollide</Option>
+      <Option>ParentDeath</Option>
+    </Param>
+  </Group>
+  <Group name="Timing" displayName="Timing">
+    <Param name="bContinuous" displayName="Continuous" type="bool" default="true" widget="checkbox" />
+    <Param name="fEmitterLifeTime" displayName="Emitter Lifetime" type="float" default="0" widget="slider" min="0" max="100" step="0.1" />
+    <Param name="fSpawnDelay" displayName="Spawn Delay" type="float" default="0" widget="slider" min="0" max="10" step="0.1" />
+    <Param name="fPulsePeriod" displayName="Pulse Period" type="float" default="0" widget="slider" min="0" max="10" step="0.1" />
+  </Group>
+  <Group name="Appearance" displayName="Appearance">
+    <Param name="eBlendType" displayName="Blend Mode" type="enum" default="Additive" widget="dropdown">
+      <Option>AlphaBased</Option>
+      <Option>Additive</Option>
+      <Option>Multiplicative</Option>
+      <Option>Opaque</Option>
+    </Param>
+    <Param name="sTexture" displayName="Texture" type="string" default="textures/particles/smoke.dds" widget="text" />
+    <Param name="cColor" displayName="Color" type="color" default="#ff6b35" widget="color" />
+    <Param name="fAlpha" displayName="Alpha" type="float" default="0.85" widget="slider" min="0" max="1" step="0.01" />
+    <Param name="fSize" displayName="Size" type="float" default="1.0" widget="slider" min="0" max="10" step="0.1" />
+  </Group>
+  <Group name="Movement" displayName="Movement">
+    <Param name="fSpeed" displayName="Speed" type="float" default="5.0" widget="slider" min="0" max="100" step="0.1" />
+    <Param name="vVelocity" displayName="Velocity" type="vec3" default="0,0,5" widget="vector" labels="X,Y,Z" />
+    <Param name="vAcceleration" displayName="Acceleration" type="vec3" default="0,0,0" widget="vector" labels="X,Y,Z" />
+    <Param name="fGravityScale" displayName="Gravity Scale" type="float" default="0" widget="slider" min="-2" max="2" step="0.1" />
+    <Param name="fAirResistance" displayName="Air Resistance" type="float" default="0.1" widget="slider" min="0" max="10" step="0.1" />
+    <Param name="fDrag" displayName="Drag" type="float" default="0.1" widget="slider" min="0" max="10" step="0.1" />
+    <Param name="fTurbulence" displayName="Turbulence" type="float" default="0.3" widget="slider" min="0" max="10" step="0.1" />
+  </Group>
+  <Group name="Collision" displayName="Collision">
+    <Param name="bZBufferCollision" displayName="Z-Buffer Collision" type="bool" default="false" widget="checkbox" />
+    <Param name="bCollideStaticObjects" displayName="Collide Static" type="bool" default="false" widget="checkbox" />
+    <Param name="bCollideTerrainOnly" displayName="Collide Terrain" type="bool" default="false" widget="checkbox" />
+  </Group>
+  <Group name="Lighting" displayName="Lighting">
+    <Param name="fEmissiveLighting" displayName="Emissive Lighting" type="float" default="0" widget="slider" min="0" max="1000" />
+    <Param name="bCastShadows" displayName="Cast Shadows" type="bool" default="false" widget="checkbox" />
+  </Group>
+</Parameters>

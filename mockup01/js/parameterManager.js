@@ -1,30 +1,292 @@
-// Enhanced Parameter Manager - Adds CryEngine 3 Parameters + Expression System
-// Extends existing parameterManager.js with ALL features from ParticleParams_info.h
-// ***** UPDATED to include exportExpressions() method *****
+// Enhanced Parameter Manager - XML-Driven
+// This manager now reads from an external XML definition via the
+// CryEngineParameterParser and uses a WidgetFactory to build the UI.
+
+import { CryEngineParameterParser } from './cryEngineParameterParser.js';
+import { WidgetFactory } from './WidgetFactory.js';
 
 export class ParameterManager {
     constructor() {
         this.container = document.getElementById('parameters-content');
         this.currentEffect = null;
-        this.widgetContextMenu = null;
-        this.presetDropdowns = new Map();
+        this.parser = new CryEngineParameterParser();
+        this.parameterElements = new Map(); // Stores widget elements by param name
         
-        // Expression system
+        // Expression system (remains the same)
         this.expressions = new Map();
         this.references = new Map();
         this.dependents = new Map();
         this.clipboard = null;
-        this.clipboardAsExpression = false;
-        this.dragSource = null;
         this.selectedParam = null;
     }
 
-    init() {
-        console.log('🎛️ Initializing Enhanced Parameter Manager with Expressions');
-        this.setupWidgetContextMenu();
-        this.setupExpressionHandlers();
+    /**
+     * Asynchronously initializes the manager by loading XML definitions.
+     */
+    async init() {
+        console.log('🎛️ Initializing XML-Driven Parameter Manager');
+        await this.parser.loadDefinitions('parameters.xml');
+        this.setupExpressionHandlers(); // Keep expression handlers
+        this.render();
     }
 
+    /**
+     * Renders the parameter UI based on the loaded XML definitions.
+     */
+    render() {
+        if (!this.container) return;
+        this.container.innerHTML = '';
+        this.parameterElements.clear();
+
+        const parameterGroups = this.parser.getGroups();
+
+        parameterGroups.forEach(group => {
+            // Filter out groups with no parameters
+            if (!group.parameters || group.parameters.length === 0) {
+                return;
+            }
+            
+            const groupEl = this.createParameterGroup(group);
+            const content = groupEl.querySelector('.parameter-group-content');
+
+            group.parameters.forEach(param => {
+                const paramEl = this.createParameter(param);
+                content.appendChild(paramEl);
+            });
+
+            this.container.appendChild(groupEl);
+        });
+    }
+
+    /**
+     * Creates the DOM for a parameter group (the collapsible header).
+     */
+    createParameterGroup(group) {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'parameter-group';
+        if (group.collapsed) {
+            groupEl.classList.add('collapsed');
+        }
+
+        const header = document.createElement('div');
+        header.className = 'parameter-group-header';
+        header.innerHTML = `
+            <span class="parameter-group-toggle">▼</span>
+            <span class="parameter-group-title">${group.title}</span>
+            <span class="parameter-group-badge">${group.parameters.length}</span>
+        `;
+
+        header.addEventListener('click', () => {
+            groupEl.classList.toggle('collapsed');
+        });
+
+        const content = document.createElement('div');
+        content.className = 'parameter-group-content';
+
+        groupEl.appendChild(header);
+        groupEl.appendChild(content);
+
+        return groupEl;
+    }
+
+    /**
+     * Creates the DOM for a single parameter row.
+     * This is where the Parameter class object would be instantiated.
+     * For now, we create the widget directly.
+     */
+    createParameter(param) {
+        const paramEl = document.createElement('div');
+        paramEl.className = 'parameter-row';
+        paramEl.dataset.paramName = param.name; // Use export name as data-attr
+
+        const header = document.createElement('div');
+        header.className = 'parameter-header';
+        header.innerHTML = `
+            <span class="parameter-label">${param.label}</span>
+            <div class="parameter-controls">
+                <div class="parameter-state default" title="Default"></div>
+                <button class="param-icon-btn reset-btn" title="Reset to Default">↺</button>
+                <button class="param-icon-btn curve-btn" title="Add to Curve">📈</button>
+                <button class="param-icon-btn menu-btn" title="More Options">⋮</button>
+            </div>
+        `;
+
+        paramEl.appendChild(header);
+
+        // --- This is what the Parameter class would do ---
+        // Create the widget
+        const widget = WidgetFactory.createWidget(param, (value) => {
+            // This is the onChange callback
+            this.handleValueChange(param.name, value);
+        });
+        paramEl.appendChild(widget);
+        this.parameterElements.set(param.name, widget);
+        // --- End Parameter class logic ---
+
+
+        // --- Setup event listeners for the row ---
+        paramEl.addEventListener('click', () => {
+            document.querySelectorAll('.parameter-row').forEach(r => r.classList.remove('selected'));
+            paramEl.classList.add('selected');
+            this.selectedParam = param.name;
+        });
+
+        // Middle-mouse drag
+        paramEl.addEventListener('mousedown', (e) => {
+            if (e.button === 1) {
+                e.preventDefault();
+                this.startDrag(param.name, paramEl);
+            }
+        });
+
+        // Context menu
+        const menuBtn = header.querySelector('.menu-btn');
+        menuBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showParamContextMenu(e, param);
+        });
+
+        // Reset button
+        const resetBtn = header.querySelector('.reset-btn');
+        resetBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.resetParameter(param);
+        });
+        
+        return paramEl;
+    }
+
+
+    /**
+     * Loads an effect's saved data into the UI.
+     */
+    loadEffect(effectData) {
+        this.currentEffect = effectData;
+        this.render(); // Re-render to ensure all elements are fresh
+
+        // Load parameter values from effect
+        if (effectData.params) {
+            setTimeout(() => { // Timeout to allow DOM to update
+                Object.entries(effectData.params).forEach(([name, value]) => {
+                    // Find the *export name* (key), not the display name
+                    const paramDef = this.parser.getParameter(name); 
+                    if (paramDef) {
+                        this.setParameterValue(paramDef.name, value);
+                    } else {
+                        console.warn(`Parameter "${name}" from save data not found in XML definitions.`);
+                    }
+                });
+                console.log('✅ Loaded parameters for', effectData.name);
+            }, 100);
+        }
+
+        // Load expressions (this system is unchanged)
+        this.expressions.clear();
+        this.references.clear();
+        this.dependents.clear();
+        if (effectData.expressions) {
+             setTimeout(() => {
+                Object.entries(effectData.expressions).forEach(([name, expression]) => {
+                    const paramDef = this.parser.getParameter(name);
+                    if (paramDef) {
+                        this.setExpression(paramDef.name, expression);
+                        this.refreshParameterRow(paramDef.name); // Refresh UI
+                    }
+                });
+                console.log('✅ Loaded expressions for', effectData.name);
+             }, 100);
+        }
+    }
+
+    /**
+     * Sets the value of a widget in the UI.
+     * @param {string} paramName - The *export name* (e.g., "fParticleLifeTime")
+     * @param {*} value - The value to set.
+     */
+    setParameterValue(paramName, value) {
+        const widget = this.parameterElements.get(paramName);
+        if (!widget) return;
+        
+        const paramDef = this.parser.getParameter(paramName);
+
+        // Update the appropriate widget
+        switch (paramDef.widget) {
+            case 'slider':
+                const sliderValue = widget.querySelector('.slider-value');
+                const sliderTrack = widget.querySelector('.slider-track');
+                const sliderInput = widget.querySelector('.slider-input');
+                if (sliderValue && sliderTrack && sliderInput) {
+                    const min = parseFloat(sliderInput.dataset.min);
+                    const max = parseFloat(sliderInput.dataset.max);
+                    const step = parseFloat(sliderValue.step);
+                    
+                    value = Math.max(min, Math.min(max, parseFloat(value)));
+                    
+                    sliderValue.value = value.toFixed(step >= 1 ? 0 : 2);
+                    const percentage = ((value - min) / (max - min)) * 100;
+                    sliderTrack.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
+                }
+                break;
+            case 'vector':
+                const vectorInputs = widget.querySelectorAll('.vector-input');
+                if (vectorInputs.length > 0 && Array.isArray(value)) {
+                    vectorInputs.forEach((input, i) => {
+                        if (value[i] !== undefined) input.value = value[i];
+                    });
+                }
+                break;
+            case 'color':
+                const colorValue = widget.querySelector('.color-value');
+                const colorSwatch = widget.querySelector('.color-swatch');
+                const colorPicker = widget.querySelector('.color-picker');
+                if (colorValue) colorValue.value = value;
+                if (colorSwatch) colorSwatch.style.background = value;
+                if (colorPicker) colorPicker.value = value;
+                break;
+            case 'dropdown':
+                const dropdown = widget.querySelector('.dropdown-select');
+                if (dropdown) dropdown.value = value;
+                break;
+            case 'checkbox':
+                const checkbox = widget.querySelector('.checkbox');
+                if (checkbox) checkbox.classList.toggle('checked', !!value);
+                break;
+            case 'text':
+                const textInput = widget.querySelector('.text-input-field');
+                if (textInput) textInput.value = value;
+                break;
+        }
+    }
+    
+    /**
+     * Resets a parameter to its default value from the XML.
+     */
+    resetParameter(param) {
+        let defaultValue = param.default;
+        
+        // Convert default types from XML string
+        switch (param.type) {
+            case 'float':
+            case 'int':
+                defaultValue = parseFloat(defaultValue);
+                break;
+            case 'bool':
+                defaultValue = (defaultValue === 'true');
+                break;
+            case 'vec3':
+                defaultValue = defaultValue.split(',').map(Number);
+                break;
+        }
+        
+        this.setParameterValue(param.name, defaultValue);
+        this.clearExpression(param.name);
+        this.dispatchParameterChange(param.name, defaultValue);
+    }
+    
+
+    // --- All methods below this line are for the Expression System ---
+    // --- They remain largely unchanged, but now use param.name ---
+    
     setupExpressionHandlers() {
         // Keyboard shortcuts for expressions
         document.addEventListener('keydown', (e) => {
@@ -56,486 +318,6 @@ export class ParameterManager {
         });
     }
 
-    setupWidgetContextMenu() {
-        this.widgetContextMenu = document.getElementById('widget-selector');
-        
-        if (!this.widgetContextMenu) return;
-
-        const items = this.widgetContextMenu.querySelectorAll('.context-menu-item');
-        items.forEach(item => {
-            item.addEventListener('click', () => {
-                const widgetType = item.dataset.widget;
-                this.changeWidgetType(widgetType);
-                this.hideContextMenu();
-            });
-        });
-
-        document.addEventListener('click', () => {
-            this.hideContextMenu();
-        });
-    }
-
-    showWidgetSelector(paramElement, x, y) {
-        if (!this.widgetContextMenu) return;
-
-        this.currentParamElement = paramElement;
-        this.widgetContextMenu.style.display = 'block';
-        
-        const menuWidth = 200;
-        const menuHeight = 200;
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        
-        let finalX = x;
-        if (x + menuWidth > windowWidth) {
-            finalX = x - menuWidth - 10;
-        }
-        
-        let finalY = y;
-        if (y + menuHeight > windowHeight) {
-            finalY = windowHeight - menuHeight - 10;
-        }
-        
-        this.widgetContextMenu.style.left = `${finalX}px`;
-        this.widgetContextMenu.style.top = `${finalY}px`;
-    }
-
-    hideContextMenu() {
-        if (this.widgetContextMenu) {
-            this.widgetContextMenu.style.display = 'none';
-        }
-    }
-
-    changeWidgetType(widgetType) {
-        if (!this.currentParamElement) return;
-
-        const paramRow = this.currentParamElement.closest('.parameter-row');
-        if (!paramRow) return;
-
-        const paramName = paramRow.querySelector('.parameter-label')?.textContent;
-        const currentValue = this.getCurrentValue(paramRow);
-
-        console.log(`Changing widget for "${paramName}" to ${widgetType}`);
-
-        const oldControl = paramRow.querySelector('.slider-control, .vector-control, .color-control, .dropdown-control, .checkbox-control');
-        if (oldControl) {
-            oldControl.remove();
-        }
-
-        let newControl;
-        switch (widgetType) {
-            case 'slider':
-                newControl = this.createSlider({ name: paramName, value: currentValue, min: 0, max: 100 });
-                break;
-            case 'number':
-                newControl = this.createNumberInput({ name: paramName, value: currentValue });
-                break;
-            case 'dropdown':
-                newControl = this.createPresetDropdown({ name: paramName, value: currentValue });
-                break;
-            case 'vector':
-                newControl = this.createVector({ name: paramName, value: [currentValue, currentValue, currentValue] });
-                break;
-            case 'color':
-                newControl = this.createColor({ name: paramName, value: '#ff6b35' });
-                break;
-        }
-
-        if (newControl) {
-            paramRow.appendChild(newControl);
-        }
-    }
-
-    getCurrentValue(paramRow) {
-        const sliderValue = paramRow.querySelector('.slider-value');
-        if (sliderValue) return parseFloat(sliderValue.value) || 0;
-
-        const vectorInput = paramRow.querySelector('.vector-input');
-        if (vectorInput) return parseFloat(vectorInput.value) || 0;
-
-        return 50;
-    }
-
-    loadEffect(effectData) {
-        this.currentEffect = effectData;
-        this.render();
-        
-        // Load parameter values from effect
-        if (effectData.params) {
-            setTimeout(() => {
-                Object.entries(effectData.params).forEach(([name, value]) => {
-                    this.setParameterValue(name, value);
-                });
-                console.log('✅ Loaded parameters for', effectData.name);
-            }, 100);
-        }
-
-        // Load expressions
-        this.expressions.clear();
-        this.references.clear();
-        this.dependents.clear();
-        if (effectData.expressions) {
-             setTimeout(() => {
-                Object.entries(effectData.expressions).forEach(([name, expression]) => {
-                    this.setExpression(name, expression);
-                    this.refreshParameterRow(name); // Refresh UI after setting expression
-                });
-                console.log('✅ Loaded expressions for', effectData.name);
-             }, 100);
-        }
-    }
-
-    render() {
-        if (!this.container) return;
-
-        this.container.innerHTML = '';
-
-        // Complete CryEngine 3 parameter groups from ParticleParams_info.h
-        // Note: These should ideally come from the parser, but we'll keep the simple manager's structure
-        // as requested by the user's file context (FIXES_APPLIED.md)
-        const parameterGroups = [
-            this.createSpawnGroup(),
-            this.createTimingGroup(),
-            this.createEmitterLocationGroup(),
-            this.createAppearanceGroup(),
-            this.createLightingGroup(),
-            this.createMovementGroup(),
-            this.createSizeGroup(),
-            this.createRotationFacingGroup(),
-            this.createCollisionGroup(),
-            this.createVisibilityGroup(),
-            this.createAdvancedGroup()
-        ];
-
-        parameterGroups.forEach(group => {
-            this.container.appendChild(this.createParameterGroup(group));
-        });
-    }
-
-    // CryEngine 3 Parameter Groups from ParticleParams_info.h
-    createSpawnGroup() {
-        return {
-            title: 'Spawn',
-            badge: '8',
-            parameters: [
-                { name: 'Enabled', type: 'checkbox', value: true, state: 'default' },
-                { name: 'Count', type: 'slider', value: 100, min: 0, max: 10000, state: 'modified' },
-                { name: 'Spawn Probability', type: 'slider', value: 1.0, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Inheritance', type: 'dropdown', value: 'Standard', options: ['Standard', 'Parent', 'ExternalRef'], state: 'default' },
-                { name: 'Spawn Mode', type: 'dropdown', value: 'Direct', options: ['Direct', 'ParentStart', 'ParentCollide', 'ParentDeath'], state: 'default' },
-                { name: 'Maintain Density', type: 'slider', value: 0, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Planetary Spacing', type: 'slider', value: 0, min: 0, max: 1000, state: 'default' },
-                { name: 'Spline Guided', type: 'checkbox', value: false, state: 'default' }
-            ]
-        };
-    }
-
-    createTimingGroup() {
-        return {
-            title: 'Timing',
-            badge: '6',
-            parameters: [
-                { name: 'Continuous', type: 'checkbox', value: true, state: 'default' },
-                { name: 'Particle Lifetime', type: 'slider', value: 2.5, min: 0, max: 10, step: 0.1, state: 'modified' },
-                { name: 'Emitter Lifetime', type: 'slider', value: 0, min: 0, max: 100, step: 0.1, state: 'default' },
-                { name: 'Spawn Delay', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Pulse Period', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Emit Per Distance', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' }
-            ]
-        };
-    }
-
-    createEmitterLocationGroup() {
-        return {
-            title: 'Emitter Location',
-            badge: '5',
-            parameters: [
-                { name: 'Position Offset', type: 'vector', value: [0, 0, 0], labels: ['X', 'Y', 'Z'], state: 'default' },
-                { name: 'Emission Size', type: 'vector', value: [1, 1, 1], labels: ['X', 'Y', 'Z'], state: 'default' },
-                { name: 'Emission Roundness', type: 'slider', value: 0, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Emission Distribution', type: 'slider', value: 0, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Bind To Camera', type: 'checkbox', value: false, state: 'default' }
-            ]
-        };
-    }
-
-    createAppearanceGroup() {
-        return {
-            title: 'Appearance',
-            badge: '8',
-            parameters: [
-                { name: 'Blend Mode', type: 'dropdown', value: 'Additive', options: ['AlphaBased', 'Additive', 'Multiplicative', 'Opaque'], state: 'default' },
-                { name: 'Texture', type: 'text', value: 'textures/particles/smoke.dds', state: 'default' },
-                { name: 'Color', type: 'color', value: '#ff6b35', state: 'modified' },
-                { name: 'Alpha', type: 'slider', value: 0.85, min: 0, max: 1, step: 0.01, state: 'modified' },
-                { name: 'Size', type: 'slider', value: 1.0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Aspect', type: 'slider', value: 1.0, min: 0, max: 4, step: 0.1, state: 'default' },
-                { name: 'Soft Particle', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Octagonal Shape', type: 'checkbox', value: false, state: 'default' }
-            ]
-        };
-    }
-
-    createLightingGroup() {
-        return {
-            title: 'Lighting',
-            badge: '6',
-            parameters: [
-                { name: 'Emissive Lighting', type: 'slider', value: 0, min: 0, max: 1000, state: 'default' },
-                { name: 'Receive Shadows', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Cast Shadows', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Reflectiveness', type: 'slider', value: 0, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Curvature', type: 'slider', value: 0, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Not Affected By Fog', type: 'checkbox', value: false, state: 'default' }
-            ]
-        };
-    }
-
-    createMovementGroup() {
-        return {
-            title: 'Movement',
-            badge: '9',
-            parameters: [
-                { name: 'Speed', type: 'slider', value: 5.0, min: 0, max: 100, step: 0.1, state: 'modified' },
-                { name: 'Inherit Velocity', type: 'slider', value: 0, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Velocity', type: 'vector', value: [0, 0, 5.0], labels: ['X', 'Y', 'Z'], state: 'inherited' },
-                { name: 'Acceleration', type: 'vector', value: [0, 0, 0], labels: ['X', 'Y', 'Z'], state: 'default' },
-                { name: 'Gravity Scale', type: 'slider', value: 0, min: -2, max: 2, step: 0.1, state: 'default' },
-                { name: 'Air Resistance', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Drag', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Turbulence', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Wind Scale', type: 'slider', value: 1.0, min: 0, max: 2, step: 0.01, state: 'default' }
-            ]
-        };
-    }
-
-    createSizeGroup() {
-        return {
-            title: 'Size',
-            badge: '5',
-            parameters: [
-                { name: 'Size', type: 'slider', value: 1.0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Aspect', type: 'slider', value: 1.0, min: 0, max: 4, step: 0.1, state: 'default' },
-                { name: 'Pivot X', type: 'slider', value: 0, min: -1, max: 1, step: 0.01, state: 'default' },
-                { name: 'Pivot Y', type: 'slider', value: 0, min: -1, max: 1, step: 0.01, state: 'default' },
-                { name: 'Velocity Stretch', type: 'slider', value: 0, min: 0, max: 1, step: 0.01, state: 'default' }
-            ]
-        };
-    }
-
-    createRotationFacingGroup() {
-        return {
-            title: 'Rotation and Facing',
-            badge: '6',
-            parameters: [
-                { name: 'Init Angles', type: 'vector', value: [0, 0, 0], labels: ['Pitch', 'Yaw', 'Roll'], state: 'default' },
-                { name: 'Random Angles', type: 'vector', value: [0, 0, 0], labels: ['Pitch', 'Yaw', 'Roll'], state: 'default' },
-                { name: 'Rotation Rate', type: 'vector', value: [0, 0, 0], labels: ['Pitch', 'Yaw', 'Roll'], state: 'default' },
-                { name: 'Facing', type: 'dropdown', value: 'Camera', options: ['Camera', 'Velocity', 'Horizontal', 'Free'], state: 'default' },
-                { name: 'Orient To Velocity', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Orient To Terrain', type: 'checkbox', value: false, state: 'default' }
-            ]
-        };
-    }
-
-    createCollisionGroup() {
-        return {
-            title: 'Collision',
-            badge: '7',
-            parameters: [
-                { name: 'Z-Buffer Collision', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Planet HeightMap', type: 'checkbox', value: false, state: 'default' },
-                { name: 'SDF Collision', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Elasticity', type: 'slider', value: 0.5, min: 0, max: 1, step: 0.01, state: 'default' },
-                { name: 'Friction', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Stop Speed', type: 'slider', value: 0, min: 0, max: 10, step: 0.1, state: 'default' },
-                { name: 'Stop Behaviour', type: 'dropdown', value: 'Stop', options: ['Stop', 'Freeze', 'Die'], state: 'default' }
-            ]
-        };
-    }
-
-    createVisibilityGroup() {
-        return {
-            title: 'Visibility',
-            badge: '7',
-            parameters: [
-                { name: 'Camera Max Distance', type: 'slider', value: 100, min: 0, max: 1000, state: 'default' },
-                { name: 'Camera Min Distance', type: 'slider', value: 0, min: 0, max: 100, state: 'default' },
-                { name: 'Max Distance LOD', type: 'slider', value: 1000, min: 0, max: 5000, state: 'default' },
-                { name: 'Sort Offset', type: 'slider', value: 0, min: -10, max: 10, step: 0.1, state: 'default' },
-                { name: 'Draw On Top', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Visible Indoors', type: 'dropdown', value: 'Both', options: ['Both', 'IndoorsOnly', 'OutdoorsOnly'], state: 'default' },
-                { name: 'Responsive AA', type: 'checkbox', value: false, state: 'default' }
-            ]
-        };
-    }
-
-    createAdvancedGroup() {
-        return {
-            title: 'Advanced',
-            badge: '5',
-            parameters: [
-                { name: 'Force Update Shader', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Half Res', type: 'checkbox', value: false, state: 'default' },
-                { name: 'Update Rule', type: 'dropdown', value: 'OnScreen', options: ['OnScreen', 'OnStreaming', 'Always'], state: 'default' },
-                { name: 'Seed', type: 'number', value: 0, min: 0, max: 99999, state: 'default' },
-                { name: 'Streamable', type: 'checkbox', value: true, state: 'default' }
-            ]
-        };
-    }
-
-    createParameterGroup(group) {
-        const groupEl = document.createElement('div');
-        groupEl.className = 'parameter-group';
-
-        const header = document.createElement('div');
-        header.className = 'parameter-group-header';
-        header.innerHTML = `
-            <span class="parameter-group-toggle">▼</span>
-            <span class="parameter-group-title">${group.title}</span>
-            <span class="parameter-group-badge">${group.badge}</span>
-        `;
-
-        header.addEventListener('click', () => {
-            groupEl.classList.toggle('collapsed');
-        });
-
-        const content = document.createElement('div');
-        content.className = 'parameter-group-content';
-
-        group.parameters.forEach(param => {
-            content.appendChild(this.createParameter(param));
-        });
-
-        groupEl.appendChild(header);
-        groupEl.appendChild(content);
-
-        return groupEl;
-    }
-
-    createParameter(param) {
-        const paramEl = document.createElement('div');
-        paramEl.className = 'parameter-row';
-        paramEl.dataset.paramName = param.name;
-
-        // Check expression status
-        const hasExpression = this.expressions.has(param.name);
-        const isReferenced = this.dependents.has(param.name);
-        
-        if (hasExpression) paramEl.classList.add('expression');
-        if (isReferenced) paramEl.classList.add('dependency');
-
-        const header = document.createElement('div');
-        header.className = 'parameter-header';
-        header.innerHTML = `
-            <span class="parameter-label">
-                ${param.name}
-                ${hasExpression ? '<span class="expr-indicator" title="Has expression">ƒx</span>' : ''}
-                ${isReferenced ? '<span class="ref-indicator" title="Referenced">🔗</span>' : ''}
-            </span>
-            <div class="parameter-controls">
-                <div class="parameter-state ${param.state}" title="${param.state}"></div>
-                <button class="param-icon-btn reset-btn" title="Reset to Default">↺</button>
-                <button class="param-icon-btn curve-btn" title="Add to Curve">📈</button>
-                <button class="param-icon-btn menu-btn" title="More Options">⋮</button>
-            </div>
-        `;
-
-        // Selection
-        paramEl.addEventListener('click', () => {
-            document.querySelectorAll('.parameter-row').forEach(r => r.classList.remove('selected'));
-            paramEl.classList.add('selected');
-            this.selectedParam = param.name;
-        });
-
-        // Middle-mouse drag
-        paramEl.addEventListener('mousedown', (e) => {
-            if (e.button === 1) {
-                e.preventDefault();
-                this.startDrag(param.name, paramEl);
-            }
-        });
-
-        // Context menu
-        const menuBtn = header.querySelector('.menu-btn');
-        menuBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.showParamContextMenu(e, param);
-        });
-
-        // Reset button
-        const resetBtn = header.querySelector('.reset-btn');
-        resetBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.resetParameter(param);
-        });
-
-        paramEl.appendChild(header);
-
-        // Create control
-        let control;
-        switch (param.type) {
-            case 'slider':
-                control = this.createSlider(param);
-                break;
-            case 'vector':
-                control = this.createVector(param);
-                break;
-            case 'color':
-                control = this.createColor(param);
-                break;
-            case 'dropdown':
-                control = this.createDropdown(param);
-                break;
-            case 'checkbox':
-                control = this.createCheckbox(param);
-                break;
-            case 'number':
-                control = this.createNumberInput(param);
-                break;
-            case 'text':
-                control = this.createTextInput(param);
-                break;
-        }
-
-        if (control) {
-            paramEl.appendChild(control);
-        }
-
-        return paramEl;
-    }
-
-    createTextInput(param) {
-        const container = document.createElement('div');
-        container.className = 'text-control';
-        container.innerHTML = `
-            <input type="text" class="text-input-field" value="${param.value || ''}" placeholder="Enter path...">
-        `;
-        
-        const input = container.querySelector('.text-input-field');
-        input?.addEventListener('change', (e) => {
-            this.dispatchParameterChange(param.name, e.target.value);
-        });
-        
-        return container;
-    }
-
-    createNumberInput(param) {
-        const container = document.createElement('div');
-        container.className = 'number-control';
-        container.innerHTML = `
-            <input type="number" class="number-input" value="${param.value || 0}" step="1" min="${param.min || 0}" max="${param.max || 999999}">
-        `;
-        
-        const input = container.querySelector('.number-input');
-        input?.addEventListener('change', (e) => {
-            this.dispatchParameterChange(param.name, parseFloat(e.target.value) || 0);
-        });
-        
-        return container;
-    }
-
-    // Expression System Methods
     copyAsValue() {
         if (!this.selectedParam) {
             this.showToast('No parameter selected');
@@ -574,6 +356,7 @@ export class ParameterManager {
         } else {
             // Paste value
             this.setParameterValue(this.selectedParam, this.clipboard.value);
+            this.dispatchParameterChange(this.selectedParam, this.clipboard.value); // Manually dispatch
             this.showToast(`📋 Pasted value to ${this.selectedParam}`);
         }
 
@@ -699,106 +482,35 @@ export class ParameterManager {
 
             // Update widget
             this.setParameterValue(paramName, result);
+            this.dispatchParameterChange(paramName, result); // Dispatch change from expression
         } catch (error) {
             console.error('Expression error:', error);
         }
     }
 
     getParameterValue(paramName) {
-        const row = this.container.querySelector(`[data-param-name="${paramName}"]`);
-        if (!row) return 0;
-
-        const sliderValue = row.querySelector('.slider-value');
-        if (sliderValue) return parseFloat(sliderValue.value) || 0;
-
-        const vectorInput = row.querySelector('.vector-input');
-        if (vectorInput) return parseFloat(vectorInput.value) || 0;
-
-        const numberInput = row.querySelector('.number-input');
-        if (numberInput) return parseFloat(numberInput.value) || 0;
-
-        const checkbox = row.querySelector('.checkbox');
-        if (checkbox) return checkbox.classList.contains('checked') ? 1 : 0;
+        const widget = this.parameterElements.get(paramName);
+        if (!widget) return 0;
         
-        const dropdown = row.querySelector('.dropdown-select');
-        if (dropdown) return dropdown.value;
-        
-        const textInput = row.querySelector('.text-input-field');
-        if (textInput) return textInput.value;
-        
-        const colorValue = row.querySelector('.color-value');
-        if(colorValue) return colorValue.value;
-
-        return 0;
-    }
-
-    setParameterValue(paramName, value) {
-        const row = this.container.querySelector(`[data-param-name="${paramName}"]`);
-        if (!row) return;
+        const paramDef = this.parser.getParameter(paramName);
 
         // Find and update the appropriate widget
-        const sliderValue = row.querySelector('.slider-value');
-        if (sliderValue) {
-            sliderValue.value = typeof value === 'number' ? value.toFixed(parseFloat(sliderValue.step) >= 1 ? 0 : 2) : value;
-            // Update slider track
-            const slider = row.querySelector('.slider-input');
-            const track = row.querySelector('.slider-track');
-            if (slider && track) {
-                const min = parseFloat(slider.dataset.min);
-                const max = parseFloat(slider.dataset.max);
-                const percentage = ((parseFloat(value) - min) / (max - min)) * 100;
-                track.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
-            }
-            return;
+        switch (paramDef.widget) {
+            case 'slider':
+                return parseFloat(widget.querySelector('.slider-value').value) || 0;
+            case 'vector':
+                const inputs = widget.querySelectorAll('.vector-input');
+                return Array.from(inputs).map(i => parseFloat(i.value) || 0);
+            case 'color':
+                return widget.querySelector('.color-value').value;
+            case 'dropdown':
+                return widget.querySelector('.dropdown-select').value;
+            case 'checkbox':
+                return widget.querySelector('.checkbox').classList.contains('checked');
+            case 'text':
+                return widget.querySelector('.text-input-field').value;
         }
-
-        const numberInput = row.querySelector('.number-input');
-        if (numberInput) {
-            numberInput.value = value;
-            return;
-        }
-        
-        const textInput = row.querySelector('.text-input-field');
-        if (textInput) {
-            textInput.value = value;
-            return;
-        }
-        
-        const colorValue = row.querySelector('.color-value');
-        if (colorValue) {
-            colorValue.value = value;
-            const swatch = row.querySelector('.color-swatch');
-            const picker = row.querySelector('.color-picker');
-            if (swatch) swatch.style.background = value;
-            if (picker) picker.value = value;
-            return;
-        }
-        
-        const dropdown = row.querySelector('.dropdown-select');
-        if (dropdown) {
-            dropdown.value = value;
-            return;
-        }
-        
-        const checkbox = row.querySelector('.checkbox');
-        if (checkbox) {
-            if (value) {
-                checkbox.classList.add('checked');
-            } else {
-                checkbox.classList.remove('checked');
-            }
-            return;
-        }
-        
-        const vectorInputs = row.querySelectorAll('.vector-input');
-        if (vectorInputs.length > 0 && Array.isArray(value)) {
-            vectorInputs.forEach((input, i) => {
-                if (value[i] !== undefined) {
-                    input.value = value[i];
-                }
-            });
-            return;
-        }
+        return 0;
     }
 
     showParamContextMenu(e, param) {
@@ -873,12 +585,6 @@ export class ParameterManager {
         }
     }
 
-    resetParameter(param) {
-        this.setParameterValue(param.name, param.value);
-        this.clearExpression(param.name);
-        this.dispatchParameterChange(param.name, param.value);
-    }
-
     refreshParameterRow(paramName) {
         const row = this.container.querySelector(`[data-param-name="${paramName}"]`);
         if (!row) return;
@@ -891,213 +597,14 @@ export class ParameterManager {
 
         const label = row.querySelector('.parameter-label');
         if (label) {
-            const name = paramName;
+            const paramDef = this.parser.getParameter(paramName);
+            const name = paramDef ? paramDef.label : paramName; // Use display name
             label.innerHTML = `
                 ${name}
                 ${hasExpression ? '<span class="expr-indicator" title="Has expression">ƒx</span>' : ''}
                 ${isReferenced ? '<span class="ref-indicator" title="Referenced">🔗</span>' : ''}
             `;
         }
-    }
-
-    // Keep ALL original methods for widgets
-    createSlider(param) {
-        const container = document.createElement('div');
-        container.className = 'slider-control';
-
-        const min = param.min || 0;
-        const max = param.max || 100;
-        const value = param.value || 50;
-        const percentage = ((value - min) / (max - min)) * 100;
-
-        container.innerHTML = `
-            <div class="slider-input" data-min="${min}" data-max="${max}">
-                <div class="slider-track" style="width: ${percentage}%">
-                    <div class="slider-handle"></div>
-                </div>
-            </div>
-            <input type="number" class="slider-value" value="${value}" step="${param.step || 1}" data-min="${min}" data-max="${max}">
-        `;
-
-        const sliderInput = container.querySelector('.slider-input');
-        const sliderTrack = container.querySelector('.slider-track');
-        const sliderHandle = container.querySelector('.slider-handle');
-        const valueInput = container.querySelector('.slider-value');
-
-        let isDragging = false;
-
-        const updateSlider = (clientX) => {
-            const rect = sliderInput.getBoundingClientRect();
-            const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-            const percentage = (x / rect.width) * 100;
-            const newValue = min + (max - min) * (percentage / 100);
-
-            sliderTrack.style.width = `${percentage}%`;
-            valueInput.value = newValue.toFixed(param.step >= 1 ? 0 : 2);
-        };
-
-        sliderHandle.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            e.preventDefault();
-        });
-
-        sliderInput.addEventListener('click', (e) => {
-            if (!isDragging) {
-                updateSlider(e.clientX);
-                const val = parseFloat(valueInput.value);
-                this.handleValueChange(param.name, val);
-            }
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            updateSlider(e.clientX);
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                const val = parseFloat(valueInput.value);
-                this.handleValueChange(param.name, val);
-            }
-            isDragging = false;
-        });
-
-        valueInput.addEventListener('change', () => {
-            const val = parseFloat(valueInput.value);
-            if (!isNaN(val)) {
-                const percentage = ((val - min) / (max - min)) * 100;
-                sliderTrack.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
-                this.handleValueChange(param.name, val);
-            }
-        });
-
-        return container;
-    }
-
-    createVector(param) {
-        const container = document.createElement('div');
-        container.className = 'vector-control';
-
-        const labels = param.labels || ['X', 'Y', 'Z'];
-        const values = param.value || [0, 0, 0];
-
-        labels.forEach((label, i) => {
-            const component = document.createElement('div');
-            component.className = 'vector-component';
-            component.innerHTML = `
-                <div class="vector-label">${label}</div>
-                <input type="number" class="vector-input" value="${values[i] || 0}" step="0.1">
-            `;
-            container.appendChild(component);
-        });
-
-        const lock = document.createElement('div');
-        lock.className = 'vector-lock';
-        lock.innerHTML = `<button class="vector-lock-btn" title="Lock Uniform Scaling">🔓</button>`;
-
-        const lockBtn = lock.querySelector('.vector-lock-btn');
-        const inputs = container.querySelectorAll('.vector-input');
-        
-        inputs.forEach(input => {
-            input.addEventListener('change', () => {
-                const values = Array.from(inputs).map(i => parseFloat(i.value) || 0);
-                this.handleValueChange(param.name, values);
-            });
-        });
-
-        lockBtn?.addEventListener('click', (e) => {
-            const btn = e.currentTarget;
-            btn.classList.toggle('locked');
-            btn.innerHTML = btn.classList.contains('locked') ? '🔒' : '🔓';
-
-            if (btn.classList.contains('locked')) {
-                const firstValue = inputs[0]?.value;
-                inputs.forEach(input => input.value = firstValue);
-                const values = Array.from(inputs).map(i => parseFloat(i.value) || 0);
-                this.handleValueChange(param.name, values);
-            }
-        });
-
-        inputs.forEach(input => {
-            input.addEventListener('input', () => {
-                if (lockBtn?.classList.contains('locked')) {
-                    const value = input.value;
-                    inputs.forEach(i => i.value = value);
-                }
-            });
-        });
-
-        container.appendChild(lock);
-        return container;
-    }
-
-    createColor(param) {
-        const container = document.createElement('div');
-        container.className = 'color-control';
-
-        container.innerHTML = `
-            <div class="color-swatch" style="background: ${param.value}"></div>
-            <input type="text" class="color-value" value="${param.value}">
-            <input type="color" class="color-picker" value="${param.value}" style="display: none;">
-        `;
-
-        const swatch = container.querySelector('.color-swatch');
-        const valueInput = container.querySelector('.color-value');
-        const picker = container.querySelector('.color-picker');
-
-        swatch?.addEventListener('click', () => picker?.click());
-
-        picker?.addEventListener('input', (e) => {
-            const color = e.target.value;
-            swatch.style.background = color;
-            valueInput.value = color;
-            this.handleValueChange(param.name, color);
-        });
-
-        return container;
-    }
-
-    createDropdown(param) {
-        const container = document.createElement('div');
-        container.className = 'dropdown-control';
-
-        const options = param.options || ['Option 1', 'Option 2', 'Option 3'];
-
-        container.innerHTML = `
-            <select class="dropdown-select">
-                ${options.map(opt => `
-                    <option value="${opt}" ${opt === param.value ? 'selected' : ''}>${opt}</option>
-                `).join('')}
-            </select>
-        `;
-        
-        const select = container.querySelector('.dropdown-select');
-        select?.addEventListener('change', (e) => {
-            this.handleValueChange(param.name, e.target.value);
-        });
-
-        return container;
-    }
-
-    createCheckbox(param) {
-        const container = document.createElement('div');
-        container.className = 'checkbox-control';
-
-        container.innerHTML = `
-            <div class="checkbox ${param.value ? 'checked' : ''}">
-                <span class="checkbox-icon">✓</span>
-            </div>
-            <span class="checkbox-label">${param.name}</span>
-        `;
-
-        const checkbox = container.querySelector('.checkbox');
-        checkbox?.addEventListener('click', () => {
-            checkbox.classList.toggle('checked');
-            const isChecked = checkbox.classList.contains('checked');
-            this.handleValueChange(param.name, isChecked);
-        });
-
-        return container;
     }
 
     handleValueChange(paramName, value) {
@@ -1194,3 +701,4 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
