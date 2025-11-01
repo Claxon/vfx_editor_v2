@@ -1,7 +1,7 @@
 // Enhanced Parameter Manager - XML-Driven
 // This manager now reads from an external XML definition via the
 // CryEngineParameterParser and uses a WidgetFactory to build the UI.
-// *** UPDATED to show ⚠️ for unused parameters ***
+// *** UPDATED to support locking ***
 
 import { CryEngineParameterParser } from './cryEngineParameterParser.js';
 import { WidgetFactory } from './WidgetFactory.js';
@@ -13,6 +13,7 @@ export class ParameterManager {
         this.parser = new CryEngineParameterParser();
         this.parameterElements = new Map(); // Stores widget elements by param name
         this.usedParams = new Set(); // Stores set of params used by renderer
+        this.isLocked = false; // NEW: Lock state
         
         // Expression system (remains the same)
         this.expressions = new Map();
@@ -132,6 +133,7 @@ export class ParameterManager {
         // Create the widget
         const widget = WidgetFactory.createWidget(param, (value) => {
             // This is the onChange callback
+            if (this.isLocked) return; // Check lock
             this.handleValueChange(param.name, value);
         });
         paramEl.appendChild(widget);
@@ -165,6 +167,7 @@ export class ParameterManager {
         const resetBtn = header.querySelector('.reset-btn');
         resetBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (this.isLocked) return; // Check lock
             this.resetParameter(param);
         });
         
@@ -176,6 +179,9 @@ export class ParameterManager {
      * Loads an effect's saved data into the UI.
      */
     loadEffect(effectData) {
+        // Set lock state based on the effect
+        this.setLocked(effectData.isLocked || false);
+
         this.currentEffect = effectData;
         this.render(); // Re-render to ensure all elements are fresh
 
@@ -304,6 +310,18 @@ export class ParameterManager {
         this.clearExpression(param.name);
         this.dispatchParameterChange(param.name, defaultValue);
     }
+
+    /**
+     * Sets the locked state of the entire parameter panel.
+     * @param {boolean} isLocked - True to lock, false to unlock.
+     */
+    setLocked(isLocked) {
+        this.isLocked = isLocked;
+        this.container.classList.toggle('locked', isLocked);
+        if (isLocked) {
+            this.showToast("Parameters locked", "info");
+        }
+    }
     
 
     // --- All methods below this line are for the Expression System ---
@@ -365,6 +383,7 @@ export class ParameterManager {
     }
 
     paste() {
+        if (this.isLocked) return; // Check lock
         if (!this.clipboard || !this.selectedParam) {
             this.showToast('Nothing to paste or no target selected');
             return;
@@ -386,6 +405,7 @@ export class ParameterManager {
     }
 
     startDrag(paramName, element) {
+        if (this.isLocked) return; // Check lock
         this.dragSource = { param: paramName, element };
         element.classList.add('dragging');
         console.log('Started drag:', paramName);
@@ -412,6 +432,7 @@ export class ParameterManager {
     }
 
     setExpression(paramName, expression) {
+        if (this.isLocked) return; // Check lock
         // Clear old references
         const oldRefs = this.references.get(paramName);
         if (oldRefs) {
@@ -536,6 +557,8 @@ export class ParameterManager {
     }
 
     showParamContextMenu(e, param) {
+        if (this.isLocked) return; // Check lock
+
         const menu = document.createElement('div');
         menu.className = 'context-menu';
         menu.style.position = 'fixed';
@@ -584,6 +607,7 @@ export class ParameterManager {
     }
 
     clearExpression(paramName) {
+        if (this.isLocked) return; // Check lock
         this.expressions.delete(paramName);
         const refs = this.references.get(paramName);
         if (refs) {
@@ -598,6 +622,7 @@ export class ParameterManager {
     }
 
     editExpression(paramName) {
+        if (this.isLocked) return; // Check lock
         const current = this.expressions.get(paramName) || '';
         const newExpr = prompt(`Expression for ${paramName}:`, current);
         
@@ -638,6 +663,8 @@ export class ParameterManager {
     }
 
     handleValueChange(paramName, value) {
+        if (this.isLocked) return; // Check lock
+        
         // Update dependents
         const deps = this.dependents.get(paramName);
         if (deps) {
@@ -666,10 +693,16 @@ export class ParameterManager {
         }));
     }
 
-    showToast(message) {
+    showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = 'toast-notification show';
-        toast.innerHTML = `<div class="toast-message">${message}</div>`;
+        
+        let icon = 'ℹ️';
+        if (type === 'success') icon = '✅';
+        if (type === 'warning') icon = '⚠️';
+        if (type ===Error) icon = '❌';
+
+        toast.innerHTML = `<div class="toast-message">${icon} ${message}</div>`;
         document.body.appendChild(toast);
         setTimeout(() => {
             toast.classList.remove('show');
@@ -733,6 +766,28 @@ style.textContent = `
     .parameter-row.selected {
         background: rgba(79, 195, 247, 0.1);
         border: 1px solid rgba(79, 195, 247, 0.3);
+    }
+
+    /* NEW: Locked state for parameter panel */
+    .parameters-content.locked {
+        opacity: 0.6;
+        pointer-events: none;
+        position: relative;
+    }
+    .parameters-content.locked::before {
+        content: '🔒 Locked';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.7);
+        color: var(--accent-tertiary);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        z-index: 100;
+        pointer-events: all;
     }
 `;
 document.head.appendChild(style);

@@ -1,277 +1,41 @@
 // Enhanced Particle Renderer - Fully reactive to parameters, curves, and timeline
-// ***** UPDATED to accept more physics parameters *****
-// ***** UPDATED to use internal parameter names (e.g., fParticleLifeTime) *****
-export class ParticleRenderer {
-    
-    // --- ADDED: Static defaults object ---
-    // This provides a single source of truth for default parameters
-    static DEFAULT_PARAMS = {
-        // Spawn
-        'fCount': 150,
-        'fParticleLifeTime': 2.5,
-        
-        // Appearance
-        'cColor': { r: 255, g: 107, b: 53, a: 1 }, // Note: cColor is custom
-        'fSize': 1.0, // Base size
-        'fAlpha': 0.85,
-        'eBlendType': 'Additive',
-        
-        // Movement
-        'fSpeed': 5.0, // Scalar speed
-        'fGravityScale': 0.0,
-        'fAirResistance': 0.1, // Mapped to drag
-        'fDrag': 0.1,
-        'fTurbulence': 0.3,
-        
-        // Collision
-        'bZBufferCollision': true,
-        'bCollideStaticObjects': true,
-        'bCollideTerrainOnly': true,
-        
-        // Unused by this sim (will get ⚠️ icon)
-        'bCastShadows': false,
-        'vVelocity': { x: 0, y: 0, z: 5 },
-        'fBurstCount': 25 // Example of an unused param
-    };
-    // --- END ADDITION ---
+// ***** UPDATED to simulate *multiple* effects from a hierarchy *****
 
-
-    // --- ADDED: List of parameters this 2D sim ACTUALLY uses ---
-    // This is checked by parameterManager to show ⚠️ on unused ones
-    static USED_PARAMS = [
-        'fCount', 'fParticleLifeTime', // Spawn
-        'eBlendType', 'cColor', 'fAlpha', 'fSize', // Appearance
-        'fSpeed', 'fGravityScale', 'fAirResistance', 'fDrag', 'fTurbulence', // Movement
-        'bZBufferCollision', 'bCollideStaticObjects', 'bCollideTerrainOnly' // Collision
-    ];
-    // --- END ADDITION ---
-
-    constructor() {
-        this.container = document.getElementById('particle-preview');
-        this.canvas = null;
-        this.ctx = null;
+// --- Helper class for managing a single effect's simulation state ---
+class EffectInstance {
+    constructor(effectData, defaultCurves) {
+        this.id = effectData.name;
+        this.effectData = effectData;
         this.particles = [];
-        this.animationId = null;
-        this.time = 0;
-        this.deltaTime = 0;
-        this.lastTime = 0;
-        this.currentEffect = null;
-        
-        // Effect parameters - now fully reactive
-        // *** UPDATED: Now uses internal CryEngine names ***
-        // *** FIX: Initialize from the static default object ***
-        this.effectParams = { ...ParticleRenderer.DEFAULT_PARAMS };
-        
-        // Curves for animated parameters - fully integrated
-        this.curves = {
-            size: [
-                { x: 0, y: 0.2 },
-                { x: 0.3, y: 0.8 },
-                { x: 0.7, y: 0.9 },
-                { x: 1, y: 0.3 }
-            ],
-            opacity: [
-                { x: 0, y: 0 },
-                { x: 0.2, y: 1 },
-                { x: 0.8, y: 1 },
-                { x: 1, y: 0 }
-            ],
-            velocity: [
-                { x: 0, y: 1 },
-                { x: 0.4, y: 0.6 },
-                { x: 0.8, y: 0.4 },
-                { x: 1, y: 0.2 }
-            ],
-            color: null
-        };
-        
-        // Timeline data - now actively affects emission
-        this.timelineData = {
-            duration: 5,
-            tracks: [],
-            flags: [],
-            currentTime: 0,
-            playing: true
-        };
-        
-        // Emitter state
-        this.emitterActive = true;
         this.particleCount = 0;
-        this.maxParticles = 1000;
         this.spawnAccumulator = 0;
-        this.burstTimer = 0;
-    }
-
-    init() {
-        console.log('✨ Initializing Enhanced Particle Renderer');
-        this.setupCanvas();
-        this.startAnimation();
-    }
-    
-    setupCanvas() {
-        if (!this.container) return;
         
-        // Create canvas
-        this.canvas = document.createElement('canvas');
-        this.canvas.style.width = '100%';
-        this.canvas.style.height = '100%';
-        this.canvas.style.position = 'absolute';
-        this.canvas.style.top = '0';
-        this.canvas.style.left = '0';
+        // Combine defaults, default curves, and effect-specific data
+        this.effectParams = { ...ParticleRenderer.DEFAULT_PARAMS, ...effectData.params };
+        this.curves = { ...defaultCurves, ...effectData.curves };
         
-        this.container.appendChild(this.canvas);
-        this.ctx = this.canvas.getContext('2d');
-        
-        // Handle resize
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
-        
-        // Add controls overlay
-        this.addControlsOverlay();
-    }
-    
-    resizeCanvas() {
-        if (!this.canvas || !this.container) return;
-        
-        const rect = this.container.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
-    }
-    
-    addControlsOverlay() {
-        const controls = document.createElement('div');
-        controls.className = 'particle-controls-overlay';
-        controls.style.cssText = `
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 100;
-            display: flex;
-            gap: 8px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px;
-            border-radius: 4px;
-        `;
-        
-        controls.innerHTML = `
-            <button class="particle-control-btn" id="play-pause" title="Play/Pause">⏸️</button>
-            <button class="particle-control-btn" id="reset" title="Reset">🔄</button>
-            <button class="particle-control-btn" id="toggle-emitter" title="Toggle Emitter">🔥</button>
-            <button class="particle-control-btn" id="clear-particles" title="Clear All">🧹</button>
-            <div style="color: white; font-size: 12px; display: flex; align-items: center; margin-left: 8px;">
-                <span>T: <span id="timeline-time">0.00</span>s</span>
-                <span style="margin-left: 12px;">P: <span id="particle-count">0</span></span>
-            </div>
-        `;
-        
-        this.container.appendChild(controls);
-        
-        // Setup control handlers
-        controls.querySelector('#play-pause')?.addEventListener('click', () => this.togglePlayPause());
-        controls.querySelector('#reset')?.addEventListener('click', () => this.reset());
-        controls.querySelector('#toggle-emitter')?.addEventListener('click', () => this.toggleEmitter());
-        controls.querySelector('#clear-particles')?.addEventListener('click', () => this.clearAllParticles());
-    }
-
-    loadEffect(effectData) {
-        console.log('Loading effect for rendering:', effectData.name);
-        this.currentEffect = effectData;
-        
-        // Reset params to default before loading
-        // *** FIX: Reset from the static DEFAULT_PARAMS object ***
-        this.effectParams = { ...ParticleRenderer.DEFAULT_PARAMS };
-
-        // Load effect parameters if available
-        if (effectData.params) {
-            // Merge loaded params into defaults
-            Object.assign(this.effectParams, effectData.params);
-        }
-        
-        // Load curves if available
-        if (effectData.curves) {
-            Object.assign(this.curves, effectData.curves);
-        }
-        
-        // Load timeline if available
-        if (effectData.timeline) {
-            Object.assign(this.timelineData, effectData.timeline);
-        }
-        
-        // *** FIX: Handle legacy color or saved color object ***
+        // Handle color conversion
         if (typeof this.effectParams.cColor === 'string') {
             this.setColorFromHex(this.effectParams.cColor);
         }
-        
-        this.reset();
-    }
-    
-    updateParameter(data) {
-        // *** UPDATED: This function now receives the internal name (data.name) ***
-        console.log('🎛️ Updating particle renderer with parameter:', data.name, '=', data.value);
-        
-        // Dynamically update any parameter in effectParams
-        // This makes it fully reactive.
-        this.effectParams[data.name] = data.value;
 
-        // Use the map for specific logic (like color conversion)
-        if (data.name === 'cColor') {
-            this.setColorFromHex(data.value);
-            console.log('  → Color now:', this.effectParams['cColor']);
-        } else if (data.name === 'eBlendType') {
-             this.effectParams['eBlendType'] = data.value.toLowerCase();
-             console.log('  → Blend mode now:', this.effectParams['eBlendType']);
-        } else {
-            console.log(`  → Generic update for "${data.name}"`);
-        }
+        // Timeline properties
+        this.startTime = effectData.timeline?.start || 0;
+        this.duration = effectData.timeline?.duration || 5.0;
+        this.endTime = this.startTime + this.duration;
         
-        // Store in current effect
-        if (this.currentEffect) {
-            if (!this.currentEffect.params) {
-                this.currentEffect.params = {};
-            }
-            this.currentEffect.params[data.name] = data.value;
-        }
+        // State properties
+        this.isVisible = effectData.isVisible !== false; // Default to true
+        this.isEmitting = false;
+        this.localTime = 0; // Time since this effect started (0 to duration)
+
+        // --- NEW: Canvas dimensions, will be set by main renderer ---
+        this.canvasWidth = 300;
+        this.canvasHeight = 200;
     }
-    
-    updateFromCurve(data) {
-        console.log('📈 Updating particle renderer from curve:', data.curve);
-        
-        // Store curve data for runtime evaluation
-        const curveName = data.curve.toLowerCase();
-        if (this.curves.hasOwnProperty(curveName)) {
-            this.curves[curveName] = data.points;
-            console.log(`  → ${data.curve} curve updated with ${data.points.length} points`);
-            
-            // Store in current effect
-            if (this.currentEffect) {
-                if (!this.currentEffect.curves) {
-                    this.currentEffect.curves = {};
-                }
-                this.currentEffect.curves[curveName] = data.points;
-            }
-        }
-    }
-    
-    updateFromTimeline(data) {
-        console.log('⏱️ Updating particle renderer from timeline:', data);
-        this.timelineData = {
-            ...this.timelineData,
-            ...data
-        };
-        
-        // Store in current effect
-        if (this.currentEffect) {
-            this.currentEffect.timeline = this.timelineData;
-        }
-        
-        console.log('  → Timeline duration:', this.timelineData.duration, 'seconds');
-        console.log('  → Active tracks:', this.timelineData.tracks?.length || 0);
-    }
-    
+
     setColorFromHex(hex) {
         if (typeof hex !== 'string' || !hex.startsWith('#')) {
-             console.warn('Invalid color format for hex:', hex);
-             // Handle color objects being passed in
              if (typeof hex === 'object' && hex.r !== undefined) {
                  this.effectParams['cColor'] = { ...hex, a: 1 };
              }
@@ -287,14 +51,137 @@ export class ParticleRenderer {
             };
         }
     }
-    
+
+    /**
+     * Updates the simulation for this effect instance.
+     * @param {number} globalTime - The main timeline's current time.
+     * @param {number} deltaTime - The delta time since the last frame.
+     * @param {number} canvasWidth - Current width of the canvas.
+     * @param {number} canvasHeight - Current height of the canvas.
+     */
+    update(globalTime, deltaTime, canvasWidth, canvasHeight) {
+        // --- NEW: Update canvas dimensions ---
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
+
+        if (!this.isVisible) {
+            this.isEmitting = false;
+            // Clear particles if visibility was toggled off
+            if (this.particles.length > 0) {
+                this.particles = [];
+                this.particleCount = 0;
+            }
+            return;
+        }
+
+        // Check if the effect is active on the global timeline
+        const isActive = (globalTime >= this.startTime && globalTime < this.endTime);
+        this.isEmitting = isActive;
+        this.localTime = globalTime - this.startTime;
+
+        // Spawn new particles
+        const spawnRate = this.effectParams['fCount'] || 0;
+        if (this.isEmitting && this.particleCount < 1000) { // Hard cap
+            this.spawnAccumulator += deltaTime * spawnRate;
+            while (this.spawnAccumulator >= 1) {
+                this.createParticle();
+                this.spawnAccumulator -= 1;
+            }
+        }
+
+        // Get physics values once
+        const gravity = (this.effectParams['fGravityScale'] || 0) * 9.8;
+        const drag = this.effectParams['fDrag'] || this.effectParams['fAirResistance'] || 0;
+        const turbulence = this.effectParams['fTurbulence'] || 0;
+        const useCollisions = this.effectParams['bZBufferCollision'] || this.effectParams['bCollideStaticObjects'] || this.effectParams['bCollideTerrainOnly'] || false;
+        
+        // Update existing particles
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            
+            p.age += deltaTime;
+            const lifeRatio = p.age / p.lifetime;
+            
+            if (lifeRatio >= 1) {
+                this.particles.splice(i, 1);
+                this.particleCount--;
+                continue;
+            }
+            
+            // Apply curves
+            p.size = this.effectParams['fSize'] * this.evaluateCurve(this.curves.size, lifeRatio);
+            p.opacity = this.effectParams['fAlpha'] * this.evaluateCurve(this.curves.opacity, lifeRatio);
+            const velocityMult = this.evaluateCurve(this.curves.velocity, lifeRatio);
+
+            // Apply physics
+            p.vy += gravity * deltaTime * 10;
+            p.vx *= (1 - drag * deltaTime);
+            p.vy *= (1 - drag * deltaTime);
+            
+            // Apply velocity curve
+            p.vx *= (0.98 + velocityMult * 0.02);
+            p.vy *= (0.98 + velocityMult * 0.02);
+
+            if (turbulence > 0) {
+                p.vx += (Math.random() - 0.5) * turbulence * deltaTime * 50;
+                p.vy += (Math.random() - 0.5) * turbulence * deltaTime * 50;
+            }
+            
+            p.x += p.vx * deltaTime * 10;
+            p.y += p.vy * deltaTime * 10;
+            p.rotation += p.rotationSpeed;
+            
+            // Collisions
+            if (useCollisions) {
+                // --- FIX: Use dynamic canvas dimensions ---
+                if (p.y > this.canvasHeight - 10) { 
+                    p.y = this.canvasHeight - 10;
+                    p.vy *= -0.5;
+                    p.vx *= 0.8;
+                }
+                if (p.x < 10 || p.x > this.canvasWidth - 10) {
+                    p.vx *= -0.5;
+                    p.x = Math.max(10, Math.min(this.canvasWidth - 10, p.x));
+                }
+            }
+        }
+    }
+
+    createParticle() {
+        const speed = this.effectParams['fSpeed'] || 0;
+        const turbulence = this.effectParams['fTurbulence'] || 0;
+        const color = this.effectParams['cColor'] || { r: 255, g: 255, b: 255, a: 1 };
+
+        const particle = {
+             // --- FIX: Use dynamic canvas dimensions ---
+            x: this.canvasWidth / 2 + (Math.random() - 0.5) * 20,
+            y: this.canvasHeight / 2 + (Math.random() - 0.5) * 20,
+            z: 0,
+            vx: (this.effectParams['vVelocity']?.x || 0) + (Math.random() - 0.5) * 2,
+            vy: -(speed) - Math.random() * 2,
+            vz: (this.effectParams['vVelocity']?.z || 0),
+            lifetime: this.effectParams['fParticleLifeTime'] * (0.8 + Math.random() * 0.4),
+            age: 0,
+            size: this.effectParams['fSize'],
+            opacity: this.effectParams['fAlpha'],
+            color: { ...color },
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 0.1
+        };
+        
+        if (turbulence > 0) {
+            particle.vx += (Math.random() - 0.5) * turbulence * 10;
+            particle.vy += (Math.random() - 0.5) * turbulence * 10;
+        }
+        
+        this.particles.push(particle);
+        this.particleCount++;
+    }
+
     evaluateCurve(curve, t) {
         if (!curve || curve.length < 2) return 1;
-        
-        // Clamp t to [0, 1]
         t = Math.max(0, Math.min(1, t));
         
-        // Find surrounding points
         let p1 = curve[0];
         let p2 = curve[curve.length - 1];
         
@@ -306,300 +193,290 @@ export class ParticleRenderer {
             }
         }
         
-        // Linear interpolation
         if (p2.x === p1.x) return p1.y;
         const ratio = (t - p1.x) / (p2.x - p1.x);
         return p1.y + (p2.y - p1.y) * ratio;
     }
-    
-    isEmitterActiveAtTime(time) {
-        // Check if any timeline tracks are active at the current time
-        if (!this.timelineData.tracks || this.timelineData.tracks.length === 0) {
-            return true; // Default to active if no timeline data
-        }
-        
-        // Check if time is within any active track
-        for (const track of this.timelineData.tracks) {
-            if (time >= track.start && time < track.start + track.duration) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    createParticle() {
-        // *** UPDATED: Use correct internal names ***
-        const speed = this.effectParams['fSpeed'] || 0;
-        const turbulence = this.effectParams['fTurbulence'] || 0;
-        const color = this.effectParams['cColor'] || { r: 255, g: 255, b: 255, a: 1 };
+}
 
-        const particle = {
-            // Position (with some spawn variance)
-            x: this.canvas.width / 2 + (Math.random() - 0.5) * 20,
-            y: this.canvas.height / 2 + (Math.random() - 0.5) * 20,
-            z: 0,
-            
-            // Velocity - now with full parameter support
-            vx: (this.effectParams['vVelocity']?.x || 0) + (Math.random() - 0.5) * 2,
-            vy: -(speed) - Math.random() * 2, // Use Speed for vertical velocity
-            vz: (this.effectParams['vVelocity']?.z || 0),
-            
-            // Properties - responsive to all parameters
-            lifetime: this.effectParams['fParticleLifeTime'] * (0.8 + Math.random() * 0.4),
-            age: 0,
-            size: this.effectParams['fSize'] * (0.8 + Math.random() * 0.4),
-            opacity: this.effectParams['fAlpha'],
-            
-            // Visual - full color support
-            color: { ...color },
-            rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.1
+export class ParticleRenderer {
+    
+    // Static defaults
+    static DEFAULT_PARAMS = {
+        'fCount': 150, 'fParticleLifeTime': 2.5,
+        'cColor': { r: 255, g: 107, b: 53, a: 1 },
+        'fSize': 1.0, 'fAlpha': 0.85, 'eBlendType': 'Additive',
+        'fSpeed': 5.0, 'fGravityScale': 0.0, 'fAirResistance': 0.1, 'fDrag': 0.1, 'fTurbulence': 0.3,
+        'bZBufferCollision': true, 'bCollideStaticObjects': true, 'bCollideTerrainOnly': true,
+        'bCastShadows': false, 'vVelocity': { x: 0, y: 0, z: 5 }, 'fBurstCount': 0
+    };
+
+    static USED_PARAMS = [
+        'fCount', 'fParticleLifeTime', 'eBlendType', 'cColor', 'fAlpha', 'fSize',
+        'fSpeed', 'fGravityScale', 'fAirResistance', 'fDrag', 'fTurbulence',
+        'bZBufferCollision', 'bCollideStaticObjects', 'bCollideTerrainOnly'
+    ];
+
+    // Default curve shapes
+    static DEFAULT_CURVES = {
+        size: [ { x: 0, y: 0.2 }, { x: 0.3, y: 0.8 }, { x: 0.7, y: 0.9 }, { x: 1, y: 0.3 } ],
+        opacity: [ { x: 0, y: 0 }, { x: 0.2, y: 1 }, { x: 0.8, y: 1 }, { x: 1, y: 0 } ],
+        velocity: [ { x: 0, y: 1 }, { x: 0.4, y: 0.6 }, { x: 0.8, y: 0.4 }, { x: 1, y: 0.2 } ],
+        color: null
+    };
+
+    constructor() {
+        this.container = document.getElementById('particle-preview');
+        this.canvas = null;
+        this.ctx = null;
+        this.effectInstances = new Map(); // Stores EffectInstance objects
+        
+        this.animationId = null;
+        this.deltaTime = 0;
+        this.lastTime = 0;
+
+        // --- NEW: Store canvas dimensions ---
+        this.canvasWidth = 300;
+        this.canvasHeight = 200;
+
+        // Global timeline state
+        this.timelineData = {
+            duration: 5.0, // Total duration
+            currentTime: 0,
+            playing: true
         };
-        
-        // Apply initial turbulence
-        if (turbulence > 0) {
-            particle.vx += (Math.random() - 0.5) * turbulence * 10;
-            particle.vy += (Math.random() - 0.5) * turbulence * 10;
-        }
-        
-        this.particles.push(particle);
-        this.particleCount++;
-        
-        return particle;
+    }
+
+    init() {
+        console.log('✨ Initializing Enhanced Particle Renderer (Multi-Effect)');
+        this.setupCanvas();
+        this.startAnimation();
     }
     
-    createBurst() {
-        // *** UPDATED: Use correct internal name ***
-        const burstCount = this.effectParams['fBurstCount'] || 0;
-        if (burstCount === 0) return;
+    setupCanvas() {
+        if (!this.container) return;
+        this.canvas = document.createElement('canvas');
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.top = '0';
+        this.canvas.style.left = '0';
         
-        console.log(`💥 Creating burst of ${burstCount} particles`);
+        this.container.appendChild(this.canvas);
+        this.ctx = this.canvas.getContext('2d');
         
-        for (let i = 0; i < burstCount; i++) {
-            if (this.particleCount < this.maxParticles) {
-                this.createParticle();
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
+        this.addControlsOverlay();
+    }
+    
+    resizeCanvas() {
+        if (!this.canvas || !this.container) return;
+        const rect = this.container.getBoundingClientRect();
+        this.canvas.width = rect.width;
+        this.canvas.height = rect.height;
+        // --- NEW: Update stored dimensions ---
+        this.canvasWidth = rect.width;
+        this.canvasHeight = rect.height;
+    }
+    
+    addControlsOverlay() {
+        const controls = document.createElement('div');
+        controls.className = 'particle-controls-overlay';
+        controls.innerHTML = `
+            <button class="particle-control-btn" id="play-pause" title="Play/Pause">⏸️</button>
+            <button class="particle-control-btn" id="reset" title="Reset">🔄</button>
+            <div style="color: white; font-size: 12px; display: flex; align-items: center; margin-left: 8px;">
+                <span>T: <span id="timeline-time">0.00</span>s</span>
+                <span style="margin-left: 12px;">P: <span id="particle-count">0</span></span>
+            </div>
+        `;
+        
+        this.container.appendChild(controls);
+        
+        controls.querySelector('#play-pause')?.addEventListener('click', () => this.togglePlayPause());
+        controls.querySelector('#reset')?.addEventListener('click', () => this.reset());
+    }
+
+    /**
+     * Loads an entire effect hierarchy.
+     * @param {object} rootEffect - The root effect node.
+     */
+    loadEffectHierarchy(rootEffect) {
+        console.log('Loading effect hierarchy for rendering:', rootEffect.name);
+        this.effectInstances.clear();
+
+        // Recursively create instances for the root and all children
+        const createInstancesRecursive = (effect) => {
+            if (effect.type !== 'effect') return;
+            
+            console.log(`  Creating instance for: ${effect.name}`);
+            const instance = new EffectInstance(effect, ParticleRenderer.DEFAULT_CURVES);
+            this.effectInstances.set(effect.name, instance);
+
+            if (effect.items) {
+                effect.items.forEach(createInstancesRecursive);
+            }
+        };
+
+        createInstancesRecursive(rootEffect);
+        this.reset();
+    }
+    
+    /**
+     * Updates a single parameter for a specific effect instance.
+     * @param {string} effectId - The name/ID of the effect.
+     * @param {string} paramName - The internal name of the parameter.
+     * @param {*} value - The new value.
+     */
+    updateEffectParameter(effectId, paramName, value) {
+        const instance = this.effectInstances.get(effectId);
+        if (instance) {
+            instance.effectParams[paramName] = value;
+            
+            // Handle special cases
+            if (paramName === 'cColor') {
+                instance.setColorFromHex(value);
+            } else if (paramName === 'eBlendType') {
+                instance.effectParams['eBlendType'] = value.toLowerCase();
             }
         }
     }
     
-    updateParticles() {
-        // Calculate delta time
+    /**
+     * Updates a curve for a specific effect instance.
+     * @param {string} effectId - The name/ID of the effect.
+     * @param {string} curveName - The name of the curve (e.g., 'size').
+     * @param {Array} points - The new curve points.
+     */
+    updateEffectCurve(effectId, curveName, points) {
+        const instance = this.effectInstances.get(effectId);
+        if (instance) {
+            instance.curves[curveName] = points;
+        }
+    }
+    
+    /**
+     * Updates the timeline properties for a specific effect instance.
+     * @param {string} effectId - The name/ID of the effect.
+     * @param {number} start - The new start time.
+     * @param {number} duration - The new duration.
+     */
+    updateEffectTimeline(effectId, start, duration) {
+        const instance = this.effectInstances.get(effectId);
+        if (instance) {
+            instance.startTime = start;
+            instance.duration = duration;
+            instance.endTime = start + duration;
+        }
+    }
+
+    /**
+     * Toggles the visibility of a specific effect instance.
+     * @param {string} effectId - The name/ID of the effect.
+     * @param {boolean} isVisible - The new visibility state.
+     */
+    updateEffectVisibility(effectId, isVisible) {
+        const instance = this.effectInstances.get(effectId);
+        if (instance) {
+            instance.isVisible = isVisible;
+        }
+    }
+
+    // --- Main Animation Loop ---
+
+    startAnimation() {
+        this.lastTime = performance.now() / 1000;
+        
+        const animate = () => {
+            this.update();
+            this.render();
+            this.animationId = requestAnimationFrame(animate);
+        };
+        animate();
+    }
+    
+    update() {
         const currentTime = performance.now() / 1000;
         this.deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
         
-        // Update timeline time
+        // Update global timeline
         if (this.timelineData.playing) {
             this.timelineData.currentTime = (this.timelineData.currentTime + this.deltaTime) % this.timelineData.duration;
         }
         
-        this.time += this.deltaTime;
-        
         // Update timeline display
-        const timeDisplay = document.getElementById('timeline-time');
-        if (timeDisplay) {
-            timeDisplay.textContent = this.timelineData.currentTime.toFixed(2);
-        }
+        document.getElementById('timeline-time').textContent = this.timelineData.currentTime.toFixed(2);
         
-        // Check if emitter should be active based on timeline
-        const timelineActive = this.isEmitterActiveAtTime(this.timelineData.currentTime);
-        
-        // *** UPDATED: Use correct internal name ***
-        // Spawn new particles based on spawn rate (if emitter and timeline allow)
-        const spawnRate = this.effectParams['fCount'] || 0;
-        if (this.emitterActive && timelineActive && this.particleCount < this.maxParticles) {
-            this.spawnAccumulator += this.deltaTime * spawnRate;
-            while (this.spawnAccumulator >= 1) {
-                this.createParticle();
-                this.spawnAccumulator -= 1;
-            }
-        }
-        
-        // *** UPDATED: Use correct internal name ***
-        // Handle burst spawning if burst count is set
-        if (this.effectParams['fBurstCount'] > 0 && timelineActive) {
-            this.burstTimer += this.deltaTime;
-            if (this.burstTimer >= 1.0) { // Burst every second
-                this.createBurst();
-                this.burstTimer = 0;
-            }
-        }
-        
-        // --- Get physics values once ---
-        // *** UPDATED: Use correct internal names ***
-        const gravity = (this.effectParams['fGravityScale'] || 0) * 9.8; // Note: CryEngine uses scale, sim uses acceleration
-        const drag = this.effectParams['fDrag'] || this.effectParams['fAirResistance'] || 0;
-        const turbulence = this.effectParams['fTurbulence'] || 0;
-        const useCollisions = this.effectParams['bZBufferCollision'] || this.effectParams['bCollideStaticObjects'] || this.effectParams['bCollideTerrainOnly'] || false;
-        
-        // Update existing particles with full curve support
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            
-            // Update age
-            p.age += this.deltaTime;
-            const lifeRatio = p.age / p.lifetime;
-            
-            // Remove dead particles
-            if (lifeRatio >= 1) {
-                this.particles.splice(i, 1);
-                this.particleCount--;
-                continue;
-            }
-            
-            // *** UPDATED: Use correct internal names ***
-            // Apply size curve - FULLY REACTIVE
-            if (this.curves.size && this.curves.size.length > 0) {
-                const curveValue = this.evaluateCurve(this.curves.size, lifeRatio);
-                p.size = this.effectParams['fSize'] * curveValue * (0.8 + Math.random() * 0.4);
-            }
-            
-            // *** UPDATED: Use correct internal names ***
-            // Apply opacity curve - FULLY REACTIVE
-            if (this.curves.opacity && this.curves.opacity.length > 0) {
-                const curveValue = this.evaluateCurve(this.curves.opacity, lifeRatio);
-                p.opacity = this.effectParams['fAlpha'] * curveValue;
-            }
-            
-            // Apply velocity curve - FULLY REACTIVE
-            if (this.curves.velocity && this.curves.velocity.length > 0) {
-                const velocityMult = this.evaluateCurve(this.curves.velocity, lifeRatio);
-                const velocityScale = 0.98 + velocityMult * 0.02; // Subtle velocity modulation
-                p.vx *= velocityScale;
-                p.vy *= velocityScale;
-            }
-            
-            // *** UPDATED: Use correct internal name ***
-            // Apply color curve if available
-            if (this.curves.color && this.curves.color.length > 0) {
-                const colorMult = this.evaluateCurve(this.curves.color, lifeRatio);
-                p.color = {
-                    r: this.effectParams['cColor'].r * colorMult,
-                    g: this.effectParams['cColor'].g * colorMult,
-                    b: this.effectParams['cColor'].b * colorMult,
-                    a: this.effectParams['cColor'].a
-                };
-            }
-            
-            // Apply physics - FULLY REACTIVE TO PARAMETERS
-            p.vy += gravity * this.deltaTime * 10;
-            
-            // Apply drag - FULLY REACTIVE
-            p.vx *= (1 - drag * this.deltaTime);
-            p.vy *= (1 - drag * this.deltaTime);
-            
-            // Apply turbulence - FULLY REACTIVE
-            if (turbulence > 0) {
-                p.vx += (Math.random() - 0.5) * turbulence * this.deltaTime * 50;
-                p.vy += (Math.random() - 0.5) * turbulence * this.deltaTime * 50;
-            }
-            
-            // Update position
-            p.x += p.vx * this.deltaTime * 10;
-            p.y += p.vy * this.deltaTime * 10;
-            p.z += p.vz * this.deltaTime * 10;
-            
-            // Update rotation
-            p.rotation += p.rotationSpeed;
-            
-            // Apply collisions if enabled - FULLY REACTIVE
-            if (useCollisions) {
-                // Simple floor collision
-                if (p.y > this.canvas.height - 10) {
-                    p.y = this.canvas.height - 10;
-                    p.vy *= -0.5; // Bounce with damping
-                    p.vx *= 0.8; // Friction
-                }
-                
-                // Wall collisions
-                if (p.x < 10 || p.x > this.canvas.width - 10) {
-                    p.vx *= -0.5;
-                    p.x = Math.max(10, Math.min(this.canvas.width - 10, p.x));
-                }
-            }
+        let totalParticles = 0;
+
+        // Update all effect instances
+        for (const instance of this.effectInstances.values()) {
+            // --- FIX: Pass canvas dimensions to instance update ---
+            instance.update(this.timelineData.currentTime, this.deltaTime, this.canvasWidth, this.canvasHeight);
+            totalParticles += instance.particleCount;
         }
         
         // Update particle count display
-        const countDisplay = document.getElementById('particle-count');
-        if (countDisplay) {
-            countDisplay.textContent = this.particleCount;
-        }
+        document.getElementById('particle-count').textContent = totalParticles;
     }
     
     render() {
         if (!this.ctx || !this.canvas) return;
         
-        // Clear canvas with subtle trail effect
+        // Clear canvas
         this.ctx.fillStyle = 'rgba(37, 37, 42, 0.15)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // *** UPDATED: Use correct internal name ***
-        // Set blend mode - FULLY REACTIVE TO PARAMETER
-        const blendMode = this.effectParams['eBlendType'] || 'Additive';
-        if (blendMode.toLowerCase() === 'additive') {
-            this.ctx.globalCompositeOperation = 'screen'; // 'screen' is often used for additive
-        } else if (blendMode.toLowerCase() === 'multiplicative') {
-            this.ctx.globalCompositeOperation = 'multiply';
-        } else if (blendMode.toLowerCase() === 'screen') {
-            this.ctx.globalCompositeOperation = 'screen';
-        } else if (blendMode.toLowerCase() === 'overlay') {
-            this.ctx.globalCompositeOperation = 'overlay';
-        } else {
-            this.ctx.globalCompositeOperation = 'source-over'; // AlphaBlend / Opaque
+        // Render particles from all instances
+        for (const instance of this.effectInstances.values()) {
+            if (!instance.isVisible || instance.particles.length === 0) continue;
+
+            const blendMode = instance.effectParams['eBlendType'] || 'Additive';
+            if (blendMode.toLowerCase() === 'additive') this.ctx.globalCompositeOperation = 'screen';
+            else if (blendMode.toLowerCase() === 'multiplicative') this.ctx.globalCompositeOperation = 'multiply';
+            else if (blendMode.toLowerCase() === 'screen') this.ctx.globalCompositeOperation = 'screen';
+            else if (blendMode.toLowerCase() === 'overlay') this.ctx.globalCompositeOperation = 'overlay';
+            else this.ctx.globalCompositeOperation = 'source-over';
+            
+            // Sort particles by Z? (Skipping for 2D sim)
+            
+            instance.particles.forEach(p => {
+                this.ctx.save();
+                
+                const screenSize = p.size * 4;
+                this.ctx.globalAlpha = p.opacity;
+                this.ctx.translate(p.x, p.y);
+                this.ctx.rotate(p.rotation);
+                
+                const r = p.color.r || 255, g = p.color.g || 255, b = p.color.b || 255;
+                
+                const gradient = this.ctx.createRadialGradient(0, 0, 0, 0, 0, screenSize);
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
+                gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.8)`);
+                gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.3)`);
+                gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(-screenSize, -screenSize, screenSize * 2, screenSize * 2);
+                
+                if (p.opacity > 0.5) {
+                    this.ctx.shadowBlur = screenSize * 2;
+                    this.ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${p.opacity})`;
+                    this.ctx.fillRect(-screenSize * 0.5, -screenSize * 0.5, screenSize, screenSize);
+                }
+                
+                this.ctx.restore();
+            });
         }
         
-        // Sort particles by Z for depth
-        this.particles.sort((a, b) => a.z - b.z);
-        
-        // Render particles with full parameter support
-        this.particles.forEach(p => {
-            this.ctx.save();
-            
-            // Calculate screen size based on Z depth
-            const depthScale = 1 + p.z * 0.001;
-            const screenSize = p.size * 4 * depthScale;
-            
-            // Set particle properties
-            this.ctx.globalAlpha = p.opacity;
-            this.ctx.translate(p.x, p.y);
-            this.ctx.rotate(p.rotation);
-            
-            // Draw particle with gradient
-            const r = p.color.r || 255;
-            const g = p.color.g || 255;
-            const b = p.color.b || 255;
-            
-            const gradient = this.ctx.createRadialGradient(0, 0, 0, 0, 0, screenSize);
-            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
-            gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.8)`);
-            gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.3)`);
-            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-            
-            this.ctx.fillStyle = gradient;
-            this.ctx.fillRect(-screenSize, -screenSize, screenSize * 2, screenSize * 2);
-            
-            // Add glow effect for bright particles
-            if (p.opacity > 0.5) {
-                this.ctx.shadowBlur = screenSize * 2;
-                this.ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${p.opacity})`;
-                this.ctx.fillRect(-screenSize * 0.5, -screenSize * 0.5, screenSize, screenSize);
-            }
-            
-            this.ctx.restore();
-        });
-        
-        // Reset blend mode
         this.ctx.globalCompositeOperation = 'source-over';
-        
-        // Draw debug info if needed
         this.renderDebugInfo();
     }
     
     renderDebugInfo() {
-        if (!this.ctx) return;
-        
-        // Draw emitter position
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         this.ctx.lineWidth = 1;
         this.ctx.setLineDash([5, 5]);
@@ -609,90 +486,39 @@ export class ParticleRenderer {
         this.ctx.setLineDash([]);
     }
     
-    startAnimation() {
-        this.lastTime = performance.now() / 1000;
-        
-        const animate = () => {
-            this.updateParticles();
-            this.render();
-            this.animationId = requestAnimationFrame(animate);
-        };
-        
-        animate();
-    }
-    
+    // --- Controls ---
+
     togglePlayPause() {
         const btn = document.getElementById('play-pause');
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-            this.animationId = null;
-            this.timelineData.playing = false;
-            if (btn) btn.textContent = '▶️';
-        } else {
-            this.startAnimation();
-            this.timelineData.playing = true;
-            if (btn) btn.textContent = '⏸️';
-        }
+        this.timelineData.playing = !this.timelineData.playing;
+        if (btn) btn.textContent = this.timelineData.playing ? '⏸️' : '▶️';
     }
     
     reset() {
-        this.particles = [];
-        this.particleCount = 0;
-        this.time = 0;
-        this.spawnAccumulator = 0;
-        this.burstTimer = 0;
         this.timelineData.currentTime = 0;
+        for (const instance of this.effectInstances.values()) {
+            instance.particles = [];
+            instance.particleCount = 0;
+            instance.spawnAccumulator = 0;
+        }
         console.log('🔄 Particle system reset');
     }
-    
-    toggleEmitter() {
-        this.emitterActive = !this.emitterActive;
-        const btn = document.getElementById('toggle-emitter');
-        if (btn) {
-            btn.textContent = this.emitterActive ? '🔥' : '💨';
-        }
-        console.log('Emitter', this.emitterActive ? 'enabled' : 'disabled');
-    }
-    
-    clearAllParticles() {
-        this.particles = [];
-        this.particleCount = 0;
-        console.log('🧹 All particles cleared');
-    }
-    
-    destroy() {
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-        }
-        this.particles = [];
-        this.particleCount = 0;
-        if (this.canvas) {
-            this.canvas.remove();
-        }
-    }
-    
-    // Export current state for saving - COMPLETE DATA CAPTURE
+
+    // --- Data Export (Unused by App) ---
     exportState() {
-        // Return a deep copy of the params
-        const exportedParams = {};
-        for(const key in this.effectParams) {
-            const value = this.effectParams[key];
-            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                exportedParams[key] = { ...value }; // Shallow copy for objects like color
-            } else if (Array.isArray(value)) {
-                 exportedParams[key] = [ ...value ]; // Shallow copy for arrays like velocity
-            } else {
-                exportedParams[key] = value;
-            }
-        }
-        
-        return {
-            effectName: this.currentEffect?.name || 'Unnamed Effect',
-            params: exportedParams, // All current values
-            curves: JSON.parse(JSON.stringify(this.curves)), // Deep copy curves
-            timeline: { ...this.timelineData }, // Shallow copy timeline
-            particleCount: this.particleCount,
-            time: this.time
+        const state = {
+            globalTime: this.timelineData.currentTime,
+            instances: {}
         };
+        for (const [id, instance] of this.effectInstances.entries()) {
+            state.instances[id] = {
+                params: instance.effectParams,
+                curves: instance.curves,
+                timeline: { start: instance.startTime, duration: instance.duration },
+                particleCount: instance.particleCount
+            };
+        }
+        return state;
     }
 }
+

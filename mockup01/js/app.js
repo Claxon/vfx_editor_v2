@@ -1,4 +1,6 @@
 // VFX Editor v2.0 - Main Application with Export Support
+// *** UPDATED to support child effects and full hierarchy simulation ***
+
 import { LibraryManager } from './libraryManager.js';
 import { ParameterManager } from './parameterManager.js';
 import { CurveEditor } from './curveEditor.js';
@@ -20,7 +22,8 @@ class VFXEditor {
         this.particleRenderer = new ParticleRenderer();
         this.exporter = new CryEngineExporter(); // Create instance
         
-        this.selectedEffect = null;
+        this.selectedEffect = null; // This is the effect currently being EDITED
+        this.rootEffect = null; // This is the root of the hierarchy being SIMULATED
         this.currentLibrary = null;
         this.effectsData = [];
         
@@ -220,7 +223,7 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
     setupEventListeners() {
         // Library selection
         document.addEventListener('effectSelected', (e) => {
-            this.selectEffect(e.detail);
+            this.selectEffect(e.detail.effectData, e.detail.rootEffectData);
         });
 
         // Parameter changes
@@ -233,14 +236,23 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
             this.onCurveChanged(e.detail);
         });
         
-        // Timeline changes
-        document.addEventListener('timelineChanged', (e) => {
+        // Timeline changes from the timeline manager
+        document.addEventListener('timelineTrackChanged', (e) => {
             this.onTimelineChanged(e.detail);
         });
 
         // Menu actions
         document.addEventListener('menuAction', (e) => {
             this.handleMenuAction(e.detail);
+        });
+
+        // --- New listeners for hierarchy controls ---
+        document.addEventListener('effectVisibilityChanged', (e) => {
+            this.onEffectVisibilityChanged(e.detail.name, e.detail.isVisible);
+        });
+
+        document.addEventListener('effectLockChanged', (e) => {
+            this.onEffectLockChanged(e.detail.name, e.detail.isLocked);
         });
     }
 
@@ -263,24 +275,48 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
         }
     }
 
-    selectEffect(effectData) {
+    /**
+     * Finds an effect by name within a hierarchy.
+     * @param {object} root - The root effect to start searching from.
+     * @param {string} name - The name of the effect to find.
+     * @returns {object|null} The found effect object or null.
+     */
+    findEffectInHierarchy(root, name) {
+        if (!root) return null;
+        if (root.name === name) return root;
+        if (root.items) {
+            for (const child of root.items) {
+                const found = this.findEffectInHierarchy(child, name);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Called when an effect is clicked in the library.
+     * @param {object} effectData - The data for the specific effect that was clicked.
+     * @param {object} rootEffectData - The data for the root parent of the clicked effect.
+     */
+    selectEffect(effectData, rootEffectData) {
+        // The effect being edited
         this.selectedEffect = effectData;
-        console.log('Selected effect:', effectData.name);
+        // The root effect for simulation
+        this.rootEffect = rootEffectData;
+
+        console.log('Selected effect (for editing):', effectData.name);
+        console.log('Root effect (for simulation):', rootEffectData.name);
         
         // Update status bar
         this.updateStatusBar(effectData);
         
-        // Load effect parameters
+        // Load the *clicked* effect into parameters and curves for editing
         this.parameterManager.loadEffect(effectData);
-        
-        // Load curves
         this.curveEditor.loadEffectCurves(effectData);
         
-        // Update timeline
-        this.timelineManager.loadEffect(effectData);
-        
-        // Update particle preview
-        this.particleRenderer.loadEffect(effectData);
+        // Load the *entire hierarchy* into the timeline and renderer for simulation
+        this.timelineManager.loadEffectHierarchy(this.rootEffect);
+        this.particleRenderer.loadEffectHierarchy(this.rootEffect);
     }
 
     updateStatusBar(effectData) {
@@ -295,9 +331,10 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
         console.log('Parameter changed:', data.name, data.value);
         
         // Update particle preview with new parameter
-        this.particleRenderer.updateParameter(data);
+        // This updates the *currently selected* effect in the renderer
+        this.particleRenderer.updateEffectParameter(this.selectedEffect.name, data.name, data.value);
         
-        // Store in current effect data
+        // Store in current effect data (the one being edited)
         if (this.selectedEffect) {
             if (!this.selectedEffect.params) {
                 this.selectedEffect.params = {};
@@ -314,7 +351,7 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
     onCurveChanged(data) {
         console.log('Curve changed:', data);
         
-        // Store curve data
+        // Store curve data in the effect being edited
         if (this.selectedEffect) {
             if (!this.selectedEffect.curves) {
                 this.selectedEffect.curves = {};
@@ -326,19 +363,48 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
         this.parameterManager.updateFromCurve(data);
         
         // Update particle preview
-        this.particleRenderer.updateFromCurve(data);
+        this.particleRenderer.updateEffectCurve(this.selectedEffect.name, data.curve.toLowerCase(), data.points);
     }
     
     onTimelineChanged(data) {
-        console.log('Timeline changed:', data);
+        console.log('Timeline changed:', data.effectId, 'Start:', data.start, 'Duration:', data.duration);
         
-        // Store timeline data
-        if (this.selectedEffect) {
-            this.selectedEffect.timeline = data;
+        // Find the effect in our master hierarchy and update it
+        const effectToUpdate = this.findEffectInHierarchy(this.rootEffect, data.effectId);
+        if (effectToUpdate) {
+            if (!effectToUpdate.timeline) effectToUpdate.timeline = {};
+            effectToUpdate.timeline.start = data.start;
+            effectToUpdate.timeline.duration = data.duration;
         }
         
         // Update particle renderer
-        this.particleRenderer.updateFromTimeline(data);
+        this.particleRenderer.updateEffectTimeline(data.effectId, data.start, data.duration);
+    }
+
+    onEffectVisibilityChanged(effectName, isVisible) {
+        console.log(`Visibility changed: ${effectName} is ${isVisible ? 'visible' : 'hidden'}`);
+        const effectToUpdate = this.findEffectInHierarchy(this.rootEffect, effectName);
+        if (effectToUpdate) {
+            effectToUpdate.isVisible = isVisible;
+        }
+        this.particleRenderer.updateEffectVisibility(effectName, isVisible);
+        this.timelineManager.updateEffectProperties(effectName, { isVisible });
+    }
+
+    onEffectLockChanged(effectName, isLocked) {
+        console.log(`Lock changed: ${effectName} is ${isLocked ? 'locked' : 'unlocked'}`);
+        const effectToUpdate = this.findEffectInHierarchy(this.rootEffect, effectName);
+        if (effectToUpdate) {
+            effectToUpdate.isLocked = isLocked;
+        }
+        
+        // Lock/unlock timeline track
+        this.timelineManager.updateEffectProperties(effectName, { isLocked });
+        
+        // If the *currently selected* effect is the one being locked, lock the param editor
+        if (this.selectedEffect && this.selectedEffect.name === effectName) {
+            this.parameterManager.setLocked(isLocked);
+        }
     }
     
     async exportLibrary() {
@@ -405,25 +471,17 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
         }
         
         // If no effects found in library, export current selected effect
-        if (effects.length === 0 && (this.selectedEffect || this.particleRenderer.currentEffect)) {
-            console.log('  No library effects found, capturing current effect from particle renderer...');
-            const currentState = this.particleRenderer.exportState();
+        if (effects.length === 0 && (this.rootEffect)) {
+            console.log('  No library effects found, capturing current root effect hierarchy...');
             
-            // Get expressions from parameter manager
-            const expressions = this.parameterManager.exportExpressions();
-            
-            const effectData = {
-                name: currentState.effectName || this.selectedEffect?.name || 'Current_Effect',
-                effectName: currentState.effectName,
-                params: { ...currentState.params },
-                expressions: expressions, // Add expressions
-                curves: { ...currentState.curves },
-                timeline: { ...currentState.timeline },
-                children: []
+            // We need to traverse the rootEffect hierarchy
+            const traverseAndAdd = (effect) => {
+                effects.push(effect);
+                if (effect.items) {
+                    effect.items.forEach(traverseAndAdd);
+                }
             };
-            
-            console.log('  ✓ Captured effect:', effectData.name);
-            effects.push(effectData);
+            traverseAndAdd(this.rootEffect);
         }
         
         console.log(`  Total effects to export: ${effects.length}`);
@@ -443,24 +501,45 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                     params: item.params || {}, // Load existing params
                     expressions: item.expressions || {}, // Load existing expressions
                     curves: item.curves || {}, // Load existing curves
-                    timeline: item.timeline || { duration: 5, tracks: [] }, // Load existing timeline
-                    children: item.children || []
+                    timeline: item.timeline || { start: 0, duration: 5.0 }, // Load existing timeline
+                    children: item.items || [], // Use 'items' for children
+                    isVisible: item.isVisible !== false,
+                    isLocked: item.isLocked || false
                 };
                 
-                // If this is the currently selected effect, use live data
-                // (this overwrites the loaded data with the absolute latest)
-                if (this.selectedEffect?.name === item.name) {
-                    console.log('      → Using live data from particle renderer and param manager');
-                    const currentState = this.particleRenderer.exportState();
-                    const expressions = this.parameterManager.exportExpressions();
+                // If this is the currently selected *root* effect, we need to
+                // replace this item with the in-memory version.
+                if (this.rootEffect && this.rootEffect.name === item.name) {
+                    // This is complex. For now, we assume the library data is
+                    // what we want to export, and live data is just for simulation.
+                    // This part needs refinement if live data should *always*
+                    // overwrite the library on export.
                     
-                    effectData.params = { ...currentState.params };
-                    effectData.expressions = expressions;
-                    effectData.curves = { ...currentState.curves };
-                    effectData.timeline = { ...currentState.timeline };
+                    // Let's assume the in-memory `rootEffect` is the source of truth
+                    // if it's the one being exported.
+                    
+                    // This logic is tricky. Let's simplify:
+                    // The `gatherEffectData` will just pull from the library structure.
+                    // The live, in-memory `this.rootEffect` (which is a copy)
+                    // is what's being modified. We need to update the *original*
+                    // library data.
+                    
+                    // `this.selectedEffect` and `this.rootEffect` are references to
+                    // objects *from* the library data. So, modifications *should*
+                    // be persistent.
+                    
+                    effects.push(effectData);
+                    if (item.items) {
+                        this.traverseLibraryItems(item.items, effects);
+                    }
+
+                } else {
+                     effects.push(effectData);
+                    if (item.items) {
+                        this.traverseLibraryItems(item.items, effects);
+                    }
                 }
-                
-                effects.push(effectData);
+
             } else if (item.type === 'folder' && item.items) {
                 // Recursively traverse folders
                 this.traverseLibraryItems(item.items, effects);
@@ -596,17 +675,76 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                             name: 'Main Thrusters',
                             type: 'folder',
                             items: [
-                                { name: 'Thruster_Main', type: 'effect', params: {}, curves: {}, expressions: {} },
-                                { name: 'Thruster_Secondary', type: 'effect', params: {}, curves: {}, expressions: {} },
-                                { name: 'Thruster_Boost', type: 'effect', params: {}, curves: {}, expressions: {} }
+                                { 
+                                    name: 'Thruster_Main', 
+                                    type: 'effect', 
+                                    params: { 'fCount': 150, 'fParticleLifeTime': 2.0, 'fSize': 1.2, 'cColor': '#ff8833' }, 
+                                    curves: {}, 
+                                    expressions: {},
+                                    timeline: { start: 0, duration: 5.0 },
+                                    items: [
+                                        { 
+                                            name: 'Thruster_Heat_Distortion', 
+                                            type: 'effect', 
+                                            params: { 'fCount': 10, 'fParticleLifeTime': 1.0, 'fSize': 2.0, 'fAlpha': 0.1, 'eBlendType': 'AlphaBased' }, 
+                                            curves: {}, 
+                                            expressions: {},
+                                            timeline: { start: 0, duration: 5.0 },
+                                            items: []
+                                        },
+                                        { 
+                                            name: 'Thruster_Sparks', 
+                                            type: 'effect', 
+                                            params: { 'fCount': 20, 'fParticleLifeTime': 0.5, 'fSize': 0.2, 'cColor': '#ffff99', 'fSpeed': 15.0, 'fGravityScale': 0.5 }, 
+                                            curves: {}, 
+                                            expressions: {},
+                                            timeline: { start: 0.2, duration: 4.8 },
+                                            items: []
+                                        }
+                                    ]
+                                },
+                                { 
+                                    name: 'Thruster_Secondary', 
+                                    type: 'effect', 
+                                    params: { 'fCount': 50 }, 
+                                    curves: {}, 
+                                    expressions: {},
+                                    timeline: { start: 0, duration: 5.0 },
+                                    items: []
+                                },
+                                { 
+                                    name: 'Thruster_Boost', 
+                                    type: 'effect', 
+                                    params: { 'fCount': 500, 'fSpeed': 20.0, 'cColor': '#66ccff' }, 
+                                    curves: {}, 
+                                    expressions: {},
+                                    timeline: { start: 1.0, duration: 2.5 },
+                                    items: []
+                                }
                             ]
                         },
                         {
                             name: 'Maneuvering',
                             type: 'folder',
                             items: [
-                                { name: 'Maneuver_Front', type: 'effect', params: {}, curves: {}, expressions: {} },
-                                { name: 'Maneuver_Back', type: 'effect', params: {}, curves: {}, expressions: {} }
+                                { 
+                                    name: 'Maneuver_Front', 
+                                    type: 'effect', 
+                                    params: {}, 
+                                    curves: {}, 
+                                    expressions: {},
+                                    timeline: { start: 0, duration: 5.0 },
+                                    items: [] 
+                                },
+                                { 
+                                    name: 'Maneuver_Back', 
+                                    type: 'effect', 
+                                    params: {}, 
+                                    curves: {}, 
+                                    expressions: {},
+                                    timeline: { start: 0, duration: 5.0 },
+                                    items: []
+                                }
                             ]
                         }
                     ]
@@ -618,8 +756,24 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                             name: 'Energy Impacts',
                             type: 'folder',
                             items: [
-                                { name: 'Impact_Plasma', type: 'effect', params: {}, curves: {}, expressions: {} },
-                                { name: 'Impact_Laser', type: 'effect', params: {}, curves: {}, expressions: {} }
+                                { 
+                                    name: 'Impact_Plasma', 
+                                    type: 'effect', 
+                                    params: {}, 
+                                    curves: {}, 
+                                    expressions: {},
+                                    timeline: { start: 0, duration: 5.0 },
+                                    items: [] 
+                                },
+                                { 
+                                    name: 'Impact_Laser', 
+                                    type: 'effect', 
+                                    params: {}, 
+                                    curves: {}, 
+                                    expressions: {},
+                                    timeline: { start: 0, duration: 5.0 },
+                                    items: []
+                                }
                             ]
                         }
                     ]
@@ -627,9 +781,33 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                 {
                     name: 'Environment/Weather.vfxlib',
                     items: [
-                        { name: 'Rain_Heavy', type: 'effect', params: {}, curves: {}, expressions: {} },
-                        { name: 'Snow_Light', type: 'effect', params: {}, curves: {}, expressions: {} },
-                        { name: 'Fog_Dense', type: 'effect', params: {}, curves: {}, expressions: {} }
+                        { 
+                            name: 'Rain_Heavy', 
+                            type: 'effect', 
+                            params: {}, 
+                            curves: {}, 
+                            expressions: {},
+                            timeline: { start: 0, duration: 5.0 },
+                            items: [] 
+                        },
+                        { 
+                            name: 'Snow_Light', 
+                            type: 'effect', 
+                            params: {}, 
+                            curves: {}, 
+                            expressions: {},
+                            timeline: { start: 0, duration: 5.0 },
+                            items: [] 
+                        },
+                        { 
+                            name: 'Fog_Dense', 
+                            type: 'effect', 
+                            params: {}, 
+                            curves: {}, 
+                            expressions: {},
+                            timeline: { start: 0, duration: 5.0 },
+                            items: [] 
+                        }
                     ]
                 }
             ]
@@ -670,4 +848,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.vfxEditor = new VFXEditor();
     await window.vfxEditor.init(); // Call the new async init
 });
-

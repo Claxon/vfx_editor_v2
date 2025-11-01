@@ -1,4 +1,5 @@
 // Library Manager - Handles library tree and effect selection
+// *** UPDATED to support nested child effects and hierarchy events ***
 export class LibraryManager {
     constructor() {
         this.container = document.getElementById('library-content');
@@ -103,16 +104,20 @@ export class LibraryManager {
 
         // Library items
         if (library.items) {
+            // *** FIX: Pass null as the rootEffect initially ***
             library.items.forEach(item => {
-                node.appendChild(this.createTreeItem(item));
+                node.appendChild(this.createTreeItem(item, 0, null));
             });
         }
 
         return node;
     }
 
-    createTreeItem(item, level = 0) {
+    createTreeItem(item, level = 0, rootEffect = null) {
         const node = document.createElement('div');
+        
+        // *** FIX: The root is the first effect encountered, or the one passed down ***
+        const currentRoot = rootEffect || (item.type === 'effect' ? item : null);
 
         if (item.type === 'folder') {
             // Folder
@@ -143,7 +148,8 @@ export class LibraryManager {
             // Folder items
             if (item.items) {
                 item.items.forEach(child => {
-                    childrenContainer.appendChild(this.createTreeItem(child, level + 1));
+                    // Pass the current root effect down
+                    childrenContainer.appendChild(this.createTreeItem(child, level + 1, currentRoot));
                 });
             }
 
@@ -168,17 +174,29 @@ export class LibraryManager {
             // Effect
             const effect = document.createElement('div');
             effect.className = 'tree-item effect';
-            effect.style.paddingLeft = `${36 + level * 16}px`;
+            // Adjust padding based on level
+            const padding = (level === 0) ? 20 : 36;
+            effect.style.paddingLeft = `${padding + level * 16}px`;
             effect.draggable = true;
             effect.dataset.type = 'effect';
             effect.dataset.name = item.name;
             
+            // Add visibility and lock state
+            if (item.isVisible === false) effect.classList.add('hidden');
+            if (item.isLocked === true) effect.classList.add('locked');
+
+            const hasChildren = item.items && item.items.length > 0;
+            const expandBtnHtml = hasChildren ? 
+                `<button class="tree-control-btn expand-btn" title="Expand/Collapse">▼</button>` : 
+                `<span class="tree-icon-placeholder"></span>`; // Placeholder for alignment
+
             effect.innerHTML = `
+                ${expandBtnHtml}
                 <span class="tree-icon">✨</span>
                 <span class="tree-name" contenteditable="false">${item.name}</span>
                 <div class="tree-controls">
-                    <button class="tree-control-btn lock-btn" title="Lock Effect">🔓</button>
-                    <button class="tree-control-btn visibility-btn" title="Show/Hide">👁️</button>
+                    <button class="tree-control-btn lock-btn" title="Lock Effect">${item.isLocked ? '🔒' : '🔓'}</button>
+                    <button class="tree-control-btn visibility-btn" title="Show/Hide">${item.isVisible === false ? '👁️‍🗨️' : '👁️'}</button>
                     <button class="tree-control-btn solo-btn" title="Solo">🎯</button>
                     <button class="tree-control-btn rename-btn" title="Rename (F2)">✏️</button>
                 </div>
@@ -217,14 +235,36 @@ export class LibraryManager {
             // Setup selection
             effect.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.selectEffect(effect, item);
+                this.selectEffect(effect, item, currentRoot);
             });
 
             node.appendChild(effect);
+
+            // *** NEW: Handle child effects ***
+            if (hasChildren) {
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'tree-children';
+                
+                item.items.forEach(child => {
+                    // Pass the SAME root effect down to all children
+                    childrenContainer.appendChild(this.createTreeItem(child, level + 1, currentRoot));
+                });
+                
+                node.appendChild(childrenContainer);
+
+                // Setup expand/collapse
+                const expandBtn = effect.querySelector('.expand-btn');
+                expandBtn?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    childrenContainer.classList.toggle('collapsed');
+                    expandBtn.textContent = childrenContainer.classList.contains('collapsed') ? '▶' : '▼';
+                });
+            }
         }
 
         return node;
     }
+
 
     enableRename(nameSpan) {
         const originalName = nameSpan.textContent;
@@ -247,6 +287,9 @@ export class LibraryManager {
                 nameSpan.textContent = originalName;
             } else {
                 console.log('Renamed:', originalName, '->', newName);
+                // Note: This only renames in UI. We'd need to update the data model.
+                // For this simulation, we'll update the dataset name
+                nameSpan.closest('.tree-item').dataset.name = newName;
                 this.showToast(`Renamed to: ${newName}`);
             }
         };
@@ -350,15 +393,33 @@ export class LibraryManager {
 
     toggleLock(element, button) {
         element.classList.toggle('locked');
-        button.textContent = element.classList.contains('locked') ? '🔒' : '🔓';
-        this.showToast(element.classList.contains('locked') ? 'Locked' : 'Unlocked');
+        const isLocked = element.classList.contains('locked');
+        button.textContent = isLocked ? '🔒' : '🔓';
+        this.showToast(isLocked ? 'Locked' : 'Unlocked');
+        
+        // Dispatch event
+        document.dispatchEvent(new CustomEvent('effectLockChanged', {
+            detail: {
+                name: element.dataset.name,
+                isLocked: isLocked
+            }
+        }));
     }
 
     toggleVisibility(element, button) {
         element.classList.toggle('hidden');
-        button.textContent = element.classList.contains('hidden') ? '👁️‍🗨️' : '👁️';
-        button.style.opacity = element.classList.contains('hidden') ? '0.5' : '1';
-        this.showToast(element.classList.contains('hidden') ? 'Hidden' : 'Visible');
+        const isHidden = element.classList.contains('hidden');
+        button.textContent = isHidden ? '👁️‍🗨️' : '👁️';
+        button.style.opacity = isHidden ? '0.5' : '1';
+        this.showToast(isHidden ? 'Hidden' : 'Visible');
+
+        // Dispatch event
+        document.dispatchEvent(new CustomEvent('effectVisibilityChanged', {
+            detail: {
+                name: element.dataset.name,
+                isVisible: !isHidden
+            }
+        }));
     }
 
     toggleSolo(element, button) {
@@ -367,19 +428,21 @@ export class LibraryManager {
         // Remove solo from all
         document.querySelectorAll('.tree-item.solo').forEach(item => {
             item.classList.remove('solo');
+            item.querySelector('.solo-btn').style.color = '';
         });
 
         if (!wasSolo) {
             element.classList.add('solo');
             button.style.color = 'var(--accent-tertiary)';
             this.showToast('Solo mode enabled');
+            // We would also need to dispatch a 'solo' event
         } else {
             button.style.color = '';
             this.showToast('Solo mode disabled');
         }
     }
 
-    selectEffect(element, effectData) {
+    selectEffect(element, effectData, rootEffectData) {
         // Remove previous selection
         if (this.selectedItem) {
             this.selectedItem.classList.remove('selected');
@@ -390,11 +453,11 @@ export class LibraryManager {
         this.selectedItem = element;
 
         // Dispatch event with effect data including params
+        // *** NEW: Pass both the clicked effect and its root ***
         const event = new CustomEvent('effectSelected', {
             detail: {
-                name: effectData.name,
-                type: effectData.type,
-                params: effectData.params || {}
+                effectData: effectData, // The effect that was clicked
+                rootEffectData: rootEffectData // The root parent effect
             }
         });
         document.dispatchEvent(event);
@@ -416,3 +479,4 @@ export class LibraryManager {
         }, 1500);
     }
 }
+
