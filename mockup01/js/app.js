@@ -435,19 +435,20 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
             if (item.type === 'effect') {
                 console.log('    Found effect:', item.name);
                 
-                // Create effect data with default parameters
-                // This is now less relevant as params are loaded on-demand,
-                // but good for a base structure.
+                // *** FIX: Read existing data from the item object ***
+                // This ensures that changes made to effects (even if not
+                // currently selected) are preserved for export.
                 const effectData = {
                     name: item.name,
-                    params: {}, // Start with empty params
-                    expressions: {},
-                    curves: {},
-                    timeline: { duration: 5, tracks: [] },
-                    children: []
+                    params: item.params || {}, // Load existing params
+                    expressions: item.expressions || {}, // Load existing expressions
+                    curves: item.curves || {}, // Load existing curves
+                    timeline: item.timeline || { duration: 5, tracks: [] }, // Load existing timeline
+                    children: item.children || []
                 };
                 
                 // If this is the currently selected effect, use live data
+                // (this overwrites the loaded data with the absolute latest)
                 if (this.selectedEffect?.name === item.name) {
                     console.log('      → Using live data from particle renderer and param manager');
                     const currentState = this.particleRenderer.exportState();
@@ -595,17 +596,17 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                             name: 'Main Thrusters',
                             type: 'folder',
                             items: [
-                                { name: 'Thruster_Main', type: 'effect' },
-                                { name: 'Thruster_Secondary', type: 'effect' },
-                                { name: 'Thruster_Boost', type: 'effect' }
+                                { name: 'Thruster_Main', type: 'effect', params: {}, curves: {}, expressions: {} },
+                                { name: 'Thruster_Secondary', type: 'effect', params: {}, curves: {}, expressions: {} },
+                                { name: 'Thruster_Boost', type: 'effect', params: {}, curves: {}, expressions: {} }
                             ]
                         },
                         {
                             name: 'Maneuvering',
                             type: 'folder',
                             items: [
-                                { name: 'Maneuver_Front', type: 'effect' },
-                                { name: 'Maneuver_Back', type: 'effect' }
+                                { name: 'Maneuver_Front', type: 'effect', params: {}, curves: {}, expressions: {} },
+                                { name: 'Maneuver_Back', type: 'effect', params: {}, curves: {}, expressions: {} }
                             ]
                         }
                     ]
@@ -617,8 +618,8 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                             name: 'Energy Impacts',
                             type: 'folder',
                             items: [
-                                { name: 'Impact_Plasma', type: 'effect' },
-                                { name: 'Impact_Laser', type: 'effect' }
+                                { name: 'Impact_Plasma', type: 'effect', params: {}, curves: {}, expressions: {} },
+                                { name: 'Impact_Laser', type: 'effect', params: {}, curves: {}, expressions: {} }
                             ]
                         }
                     ]
@@ -626,9 +627,9 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
                 {
                     name: 'Environment/Weather.vfxlib',
                     items: [
-                        { name: 'Rain_Heavy', type: 'effect' },
-                        { name: 'Snow_Light', type: 'effect' },
-                        { name: 'Fog_Dense', type: 'effect' }
+                        { name: 'Rain_Heavy', type: 'effect', params: {}, curves: {}, expressions: {} },
+                        { name: 'Snow_Light', type: 'effect', params: {}, curves: {}, expressions: {} },
+                        { name: 'Fog_Dense', type: 'effect', params: {}, curves: {}, expressions: {} }
                     ]
                 }
             ]
@@ -669,3 +670,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.vfxEditor = new VFXEditor();
     await window.vfxEditor.init(); // Call the new async init
 });
+

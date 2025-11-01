@@ -3,6 +3,39 @@
 // ***** UPDATED to use internal parameter names (e.g., fParticleLifeTime) *****
 export class ParticleRenderer {
     
+    // --- ADDED: Static defaults object ---
+    // This provides a single source of truth for default parameters
+    static DEFAULT_PARAMS = {
+        // Spawn
+        'fCount': 150,
+        'fParticleLifeTime': 2.5,
+        
+        // Appearance
+        'cColor': { r: 255, g: 107, b: 53, a: 1 }, // Note: cColor is custom
+        'fSize': 1.0, // Base size
+        'fAlpha': 0.85,
+        'eBlendType': 'Additive',
+        
+        // Movement
+        'fSpeed': 5.0, // Scalar speed
+        'fGravityScale': 0.0,
+        'fAirResistance': 0.1, // Mapped to drag
+        'fDrag': 0.1,
+        'fTurbulence': 0.3,
+        
+        // Collision
+        'bZBufferCollision': true,
+        'bCollideStaticObjects': true,
+        'bCollideTerrainOnly': true,
+        
+        // Unused by this sim (will get ⚠️ icon)
+        'bCastShadows': false,
+        'vVelocity': { x: 0, y: 0, z: 5 },
+        'fBurstCount': 25 // Example of an unused param
+    };
+    // --- END ADDITION ---
+
+
     // --- ADDED: List of parameters this 2D sim ACTUALLY uses ---
     // This is checked by parameterManager to show ⚠️ on unused ones
     static USED_PARAMS = [
@@ -26,35 +59,8 @@ export class ParticleRenderer {
         
         // Effect parameters - now fully reactive
         // *** UPDATED: Now uses internal CryEngine names ***
-        this.effectParams = {
-            // --- Default values ---
-            // Spawn
-            'fCount': 150,
-            'fParticleLifeTime': 2.5,
-            
-            // Appearance
-            'cColor': { r: 255, g: 107, b: 53, a: 1 }, // Note: cColor is custom
-            'fSize': 1.0, // Base size
-            'fAlpha': 0.85,
-            'eBlendType': 'Additive',
-            
-            // Movement
-            'fSpeed': 5.0, // Scalar speed
-            'fGravityScale': 0.0,
-            'fAirResistance': 0.1, // Mapped to drag
-            'fDrag': 0.1,
-            'fTurbulence': 0.3,
-            
-            // Collision
-            'bZBufferCollision': true,
-            'bCollideStaticObjects': true,
-            'bCollideTerrainOnly': true,
-            
-            // Unused by this sim (will get ⚠️ icon)
-            'bCastShadows': false,
-            'vVelocity': { x: 0, y: 0, z: 5 },
-            'fBurstCount': 25 // Example of an unused param
-        };
+        // *** FIX: Initialize from the static default object ***
+        this.effectParams = { ...ParticleRenderer.DEFAULT_PARAMS };
         
         // Curves for animated parameters - fully integrated
         this.curves = {
@@ -172,7 +178,8 @@ export class ParticleRenderer {
         this.currentEffect = effectData;
         
         // Reset params to default before loading
-        this.effectParams = { ...this.constructor.prototype.effectParams };
+        // *** FIX: Reset from the static DEFAULT_PARAMS object ***
+        this.effectParams = { ...ParticleRenderer.DEFAULT_PARAMS };
 
         // Load effect parameters if available
         if (effectData.params) {
