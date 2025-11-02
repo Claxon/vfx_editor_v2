@@ -89,6 +89,8 @@ export class WidgetFactory {
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             updateSlider(e.clientX);
+			const val = parseFloat(valueInput.value);
+            onChange(val);
         });
 
         document.addEventListener('mouseup', () => {

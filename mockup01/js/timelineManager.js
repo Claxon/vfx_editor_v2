@@ -1,26 +1,31 @@
 // Timeline Manager - Handles timeline visualization and track editing
-// *** UPDATED to support effect hierarchies and locking ***
+// *** UPDATED with hierarchical tracks, lock/hide, and duration handle ***
 export class TimelineManager {
     constructor() {
         this.container = document.getElementById('timeline-container');
         this.duration = 5; // seconds
-        this.tracks = []; // Will store { id, name, start, duration, color, level, isLocked, isVisible }
-        this.flags = [];
+        this.pixelsPerSecond = 200; // Base pixels per second
         this.zoom = 1;
-        this.pixelsPerSecond = 200; // Base zoom level
+        this.tracks = [];
+        this.flags = [];
     }
 
     init() {
         console.log('⏱️ Initializing Timeline Manager');
     }
 
+    /**
+     * Loads the entire effect hierarchy (root + children) into the timeline.
+     * @param {object} rootEffect - The root effect node.
+     */
     loadEffectHierarchy(rootEffect) {
         // Build tracks from the effect hierarchy
         this.tracks = [];
         this.buildTracksRecursive(rootEffect, 0);
         
-        // Find the max duration
-        this.duration = this.tracks.reduce((max, track) => Math.max(max, track.start + track.duration), 5);
+        // Find the max duration from tracks, default to 5 if no tracks
+        const maxTrackDuration = this.tracks.reduce((max, track) => Math.max(max, track.start + track.duration), 0);
+        this.duration = maxTrackDuration > 0 ? maxTrackDuration : 5.0;
 
         this.flags = [
             { time: 1.0, label: 'Burst', color: '#4ecdc4' },
@@ -30,45 +35,46 @@ export class TimelineManager {
         this.render();
     }
 
+    /**
+     * Recursively builds a flat list of tracks from the effect tree.
+     * @param {object} effect - The current effect node.
+     * @param {number} level - The current hierarchy level for indentation.
+     */
     buildTracksRecursive(effect, level) {
         if (effect.type !== 'effect') return;
 
-        // Add track for the current effect
-        const trackData = {
+        // Add this effect as a track
+        this.tracks.push({
             id: effect.name,
             name: effect.name,
             start: effect.timeline?.start || 0,
-            duration: effect.timeline?.duration || this.duration,
-            color: effect.color || this.getRandomColor(level),
+            duration: effect.timeline?.duration || 2.0,
+            color: effect.timeline?.color || this.getColorForLevel(level),
             level: level,
             isLocked: effect.isLocked || false,
             isVisible: effect.isVisible !== false // Default to true
-        };
-        this.tracks.push(trackData);
+        });
 
-        // Recursively add children
+        // Recurse for children
         if (effect.items) {
             effect.items.forEach(child => this.buildTracksRecursive(child, level + 1));
         }
     }
 
-    getRandomColor(level) {
-        const colors = [
-            ['#ff6b35', '#f7b731', '#f94144'], // Level 0
-            ['#4ecdc4', '#3b82f6', '#43aa8b'], // Level 1
-            ['#a855f7', '#90be6d', '#f8961e']  // Level 2+
-        ];
-        const set = colors[Math.min(level, colors.length - 1)];
-        return set[Math.floor(Math.random() * set.length)];
+    getColorForLevel(level) {
+        const colors = ['#ff6b35', '#4ecdc4', '#f7b731', '#a855f7', '#3b82f6'];
+        return colors[level % colors.length];
     }
 
     render() {
         if (!this.container) return;
 
+        // Calculate total width based on duration and zoom
+        const totalWidth = this.pixelsPerSecond * this.duration * this.zoom;
+        
         const content = document.createElement('div');
         content.className = 'timeline-content';
-        const totalWidth = this.duration * this.pixelsPerSecond * this.zoom;
-        content.style.width = `${totalWidth}px`;
+        content.style.width = `${totalWidth}px`; // Set explicit width
 
         // Create header with controls
         const header = document.createElement('div');
@@ -77,29 +83,26 @@ export class TimelineManager {
             <span>Track Name</span>
             <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
                 <button class="timeline-control-btn" title="Add Flag Point">🚩</button>
-                <button class="timeline-control-btn" id="zoom-in" title="Zoom In">🔍+</button>
-                <button class="timeline-control-btn" id="zoom-out" title="Zoom Out">🔍-</button>
+                <button class="timeline-control-btn" id="timeline-zoom-in" title="Zoom In">🔍+</button>
+                <button class="timeline-control-btn" id="timeline-zoom-out" title="Zoom Out">🔍-</button>
                 <span style="margin-left: 8px;">Duration: ${this.duration.toFixed(1)}s</span>
             </div>
         `;
 
         // Setup zoom controls
-        header.querySelector('#zoom-in')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.zoom = Math.min(5, this.zoom * 1.2);
+        header.querySelector('#timeline-zoom-in')?.addEventListener('click', () => {
+            this.zoom = Math.min(5, this.zoom * 1.5);
             this.render();
         });
 
-        header.querySelector('#zoom-out')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.zoom = Math.max(0.2, this.zoom / 1.2);
+        header.querySelector('#timeline-zoom-out')?.addEventListener('click', () => {
+            this.zoom = Math.max(0.2, this.zoom / 1.5);
             this.render();
         });
 
         // Setup add flag
-        header.querySelector('.timeline-control-btn')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.addFlag(2.5); // Add at middle
+        header.querySelector('.timeline-control-btn[title="Add Flag Point"]')?.addEventListener('click', () => {
+            this.addFlag(this.duration / 2); // Add at middle
         });
 
         // Create ruler
@@ -122,39 +125,49 @@ export class TimelineManager {
 
         // Render flags after tracks
         this.renderFlags(totalWidth);
+
+        // --- NEW: Setup duration handle ---
+        const durationHandle = ruler.querySelector('.timeline-duration-handle');
+        this.setupDurationHandle(durationHandle, ruler);
     }
 
     createRuler(totalWidth) {
         const ruler = document.createElement('div');
         ruler.className = 'timeline-ruler';
-        ruler.style.width = `${totalWidth}px`;
+        // Note: width is implicitly 100% of its parent, which is `totalWidth`
 
-        const steps = Math.ceil(this.duration);
-        const stepSize = (1 / this.duration) * 100; // Percent per second
+        const steps = Math.ceil(this.duration * this.zoom);
+        const step = this.duration / steps;
+        
+        const timeStep = Math.max(0.1, 1 / this.zoom); // Dynamic step size
 
-        // Add time markers
-        for (let i = 0; i <= steps; i++) {
+        for (let i = 0; i <= this.duration; i += timeStep) {
             const time = i;
-            if (time > this.duration) continue;
-
             const marker = document.createElement('div');
             marker.className = 'timeline-marker';
             marker.style.left = `${(time / this.duration) * 100}%`;
 
             const label = document.createElement('div');
             label.className = 'timeline-marker-label';
-            label.textContent = `${time.toFixed(0)}s`;
+            label.textContent = `${time.toFixed(1)}s`;
             label.style.left = `${(time / this.duration) * 100}%`;
 
             ruler.appendChild(marker);
             ruler.appendChild(label);
         }
 
+        // --- NEW: Add duration handle ---
+        const durationHandle = document.createElement('div');
+        durationHandle.className = 'timeline-duration-handle';
+        durationHandle.title = 'Drag to change total duration';
+        ruler.appendChild(durationHandle);
+        // --- END NEW ---
+
         // Make ruler clickable to add flags
         ruler.addEventListener('dblclick', (e) => {
             const rect = ruler.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            const time = (x / totalWidth) * this.duration;
+            const time = (x / ruler.offsetWidth) * this.duration;
             this.addFlag(time);
         });
 
@@ -164,9 +177,12 @@ export class TimelineManager {
     createTrack(track, totalWidth) {
         const trackEl = document.createElement('div');
         trackEl.className = 'timeline-track';
-        trackEl.dataset.effectId = track.id;
-        trackEl.style.width = `${totalWidth}px`;
-        trackEl.style.paddingLeft = `${track.level * 20}px`; // Indentation
+        // Note: width is implicitly 100% of its parent, `tracksContainer`
+        
+        // Apply hierarchy indentation
+        trackEl.style.paddingLeft = `${track.level * 20}px`;
+
+        // Apply visual state
         if (track.isLocked) trackEl.classList.add('locked');
         if (!track.isVisible) trackEl.classList.add('hidden');
 
@@ -178,52 +194,55 @@ export class TimelineManager {
         // Create track bar
         const bar = document.createElement('div');
         bar.className = 'track-bar';
-        const barLeft = (track.start / this.duration) * 100;
-        const barWidth = (track.duration / this.duration) * 100;
-        
-        bar.style.left = `${barLeft}%`;
-        bar.style.width = `${barWidth}%`;
+        bar.style.left = `${(track.start / this.duration) * 100}%`;
+        bar.style.width = `${(track.duration / this.duration) * 100}%`;
         bar.style.background = track.color;
         
+        const minDuration = 0.1; // 0.1s minimum duration
+        const minWidthPercent = (minDuration / this.duration) * 100;
+
         bar.innerHTML = `
             <span class="bar-label">${track.duration.toFixed(1)}s</span>
             <div class="bar-handle bar-handle-start" title="Adjust Start Time"></div>
             <div class="bar-handle bar-handle-end" title="Adjust Duration"></div>
         `;
 
-        // Make bar draggable (move position)
-        this.setupBarDrag(bar, track, trackEl);
-
-        // Make handles draggable (adjust start/duration)
-        this.setupHandleDrag(bar, track, trackEl);
+        if (!track.isLocked) {
+            // Make bar draggable (move position)
+            this.setupBarDrag(bar, track, trackEl, minWidthPercent, totalWidth);
+            // Make handles draggable (adjust start/duration)
+            this.setupHandleDrag(bar, track, trackEl, minWidthPercent, totalWidth);
+        }
 
         trackEl.appendChild(bar);
 
         return trackEl;
     }
 
-    setupBarDrag(bar, track, trackEl) {
+    setupBarDrag(bar, track, trackEl, minWidthPercent, totalWidth) {
         const barLabel = bar.querySelector('.bar-label');
 
         bar.addEventListener('mousedown', (e) => {
-            if (track.isLocked) return; // Check lock
-            
-            // Don't drag if clicking on handles
             if (e.target.classList.contains('bar-handle')) return;
 
             e.stopPropagation();
             const startX = e.clientX;
-            const startLeftPercent = parseFloat(bar.style.left);
-            const barWidthPercent = parseFloat(bar.style.width);
-            const trackWidthPixels = trackEl.offsetWidth;
+            const startLeftPercent = parseFloat(bar.style.left) || 0;
+            const barWidthPercent = parseFloat(bar.style.width) || 0;
+            const visualPixelsPerSecond = this.pixelsPerSecond * this.zoom;
 
             const onMouseMove = (e) => {
                 const deltaX = e.clientX - startX;
-                const deltaPercent = (deltaX / trackWidthPixels) * 100;
-                const newLeft = Math.max(0, Math.min(100 - barWidthPercent, startLeftPercent + deltaPercent));
+                // --- FIX: Calculate delta time based on pixelsPerSecond and zoom ---
+                const deltaTime = deltaX / visualPixelsPerSecond;
+                const originalStartTime = (startLeftPercent / 100) * this.duration;
+                
+                const newStartTime = Math.max(0, Math.min(this.duration - track.duration, originalStartTime + deltaTime));
+                const newLeft = (newStartTime / this.duration) * 100;
+                // --- END FIX ---
                 
                 bar.style.left = `${newLeft}%`;
-                track.start = (newLeft / 100) * this.duration;
+                track.start = newStartTime;
                 
                 barLabel.textContent = `${track.duration.toFixed(1)}s @ ${track.start.toFixed(1)}s`;
             };
@@ -232,7 +251,6 @@ export class TimelineManager {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
                 barLabel.textContent = `${track.duration.toFixed(1)}s`;
-                // Dispatch change
                 this.dispatchTrackChange(track);
             };
 
@@ -241,41 +259,55 @@ export class TimelineManager {
         });
     }
 
-    setupHandleDrag(bar, track, trackEl) {
+    setupHandleDrag(bar, track, trackEl, minWidthPercent, totalWidth) {
         const startHandle = bar.querySelector('.bar-handle-start');
         const endHandle = bar.querySelector('.bar-handle-end');
         const barLabel = bar.querySelector('.bar-label');
-        const trackWidthPixels = trackEl.offsetWidth;
 
         // Start handle - adjust start time and duration
         startHandle?.addEventListener('mousedown', (e) => {
-            if (track.isLocked) return; // Check lock
             e.stopPropagation();
-            
             const startX = e.clientX;
-            const originalStartPercent = parseFloat(bar.style.left);
-            const originalWidthPercent = parseFloat(bar.style.width);
-            const minWidthPercent = (0.1 / this.duration) * 100; // Min 0.1s
+            const originalStartPercent = parseFloat(bar.style.left) || 0;
+            const originalWidthPercent = parseFloat(bar.style.width) || 0;
+            const visualPixelsPerSecond = this.pixelsPerSecond * this.zoom;
+            
+            const originalStartTime = (originalStartPercent / 100) * this.duration;
+            const originalDuration = (originalWidthPercent / 100) * this.duration;
+            const minDuration = 0.1;
 
             const onMouseMove = (e) => {
                 const deltaX = e.clientX - startX;
-                const deltaPercent = (deltaX / trackWidthPixels) * 100;
+                // --- FIX: Calculate delta time based on pixelsPerSecond and zoom ---
+                const deltaTime = deltaX / visualPixelsPerSecond;
                 
-                const newStart = Math.max(0, Math.min(originalStartPercent + originalWidthPercent - minWidthPercent, originalStartPercent + deltaPercent));
-                const newWidth = originalStartPercent + originalWidthPercent - newStart;
+                let newStartTime = Math.max(0, originalStartTime + deltaTime);
+                let newDuration = (originalStartTime + originalDuration) - newStartTime;
+
+                // Enforce minimum duration
+                if (newDuration < minDuration) {
+                    newDuration = minDuration;
+                    newStartTime = (originalStartTime + originalDuration) - minDuration;
+                }
+                // --- END FIX ---
+
+                const newStartPercent = (newStartTime / this.duration) * 100;
+                const newWidthPercent = (newDuration / this.duration) * 100;
+
+                bar.style.left = `${newStartPercent}%`;
+                bar.style.width = `${newWidthPercent}%`;
                 
-                bar.style.left = `${newStart}%`;
-                bar.style.width = `${newWidth}%`;
+                track.start = newStartTime;
+                track.duration = newDuration;
                 
-                track.start = (newStart / 100) * this.duration;
-                track.duration = (newWidth / 100) * this.duration;
-                
-                barLabel.textContent = `${track.duration.toFixed(1)}s`;
+                // --- FIX: Show start time while dragging ---
+                barLabel.textContent = `${track.duration.toFixed(1)}s @ ${track.start.toFixed(1)}s`;
             };
 
             const onMouseUp = () => {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
+                barLabel.textContent = `${track.duration.toFixed(1)}s`;
                 this.dispatchTrackChange(track);
             };
 
@@ -285,29 +317,42 @@ export class TimelineManager {
 
         // End handle - adjust duration only
         endHandle?.addEventListener('mousedown', (e) => {
-            if (track.isLocked) return; // Check lock
             e.stopPropagation();
-            
             const startX = e.clientX;
-            const originalWidthPercent = parseFloat(bar.style.width);
-            const startPosPercent = parseFloat(bar.style.left);
-            const minWidthPercent = (0.1 / this.duration) * 100;
+            const originalWidthPercent = parseFloat(bar.style.width) || 0;
+            const startPosPercent = parseFloat(bar.style.left) || 0;
+            const visualPixelsPerSecond = this.pixelsPerSecond * this.zoom;
+
+            const originalDuration = (originalWidthPercent / 100) * this.duration;
+            const startTime = (startPosPercent / 100) * this.duration;
+            const minDuration = 0.1;
 
             const onMouseMove = (e) => {
                 const deltaX = e.clientX - startX;
-                const deltaPercent = (deltaX / trackWidthPixels) * 100;
+                // --- FIX: Calculate delta time based on pixelsPerSecond and zoom ---
+                const deltaTime = deltaX / visualPixelsPerSecond;
                 
-                const newWidth = Math.max(minWidthPercent, Math.min(100 - startPosPercent, originalWidthPercent + deltaPercent));
+                let newDuration = Math.max(minDuration, originalDuration + deltaTime);
                 
-                bar.style.width = `${newWidth}%`;
-                track.duration = (newWidth / 100) * this.duration;
+                // Constrain to end of timeline
+                if (startTime + newDuration > this.duration) {
+                    newDuration = this.duration - startTime;
+                }
+                // --- END FIX ---
                 
-                barLabel.textContent = `${track.duration.toFixed(1)}s`;
+                const newWidthPercent = (newDuration / this.duration) * 100;
+
+                bar.style.width = `${newWidthPercent}%`;
+                track.duration = newDuration;
+                
+                // --- FIX: Show start time while dragging ---
+                barLabel.textContent = `${track.duration.toFixed(1)}s @ ${track.start.toFixed(1)}s`;
             };
 
             const onMouseUp = () => {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
+                barLabel.textContent = `${track.duration.toFixed(1)}s`;
                 this.dispatchTrackChange(track);
             };
 
@@ -317,6 +362,7 @@ export class TimelineManager {
     }
 
     dispatchTrackChange(track) {
+        // Dispatch event so app can update renderer
         document.dispatchEvent(new CustomEvent('timelineTrackChanged', {
             detail: {
                 effectId: track.id,
@@ -324,6 +370,56 @@ export class TimelineManager {
                 duration: track.duration
             }
         }));
+    }
+    
+    // --- NEW: Method to handle dragging the total duration ---
+    setupDurationHandle(handle, ruler) {
+        if (!handle) return;
+
+        handle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            const rulerRect = ruler.getBoundingClientRect();
+            const startX = rulerRect.left;
+            const startWidth = rulerRect.width;
+            const startDuration = this.duration;
+
+            const onMouseMove = (e) => {
+                const currentWidth = e.clientX - startX;
+                
+                // --- FIX: Don't re-render, just calculate new duration and dispatch ---
+                // Calculate new duration based on pixel change, not zoom
+                const newDuration = Math.max(1, startDuration * (currentWidth / startWidth));
+
+                if (newDuration.toFixed(1) !== this.duration.toFixed(1)) {
+                    this.duration = newDuration;
+                    
+                    // Update header text immediately
+                    const headerSpan = this.container.querySelector('.timeline-header span');
+                    if (headerSpan) headerSpan.textContent = `Duration: ${this.duration.toFixed(1)}s`;
+                    
+                    // Dispatch live update
+                    document.dispatchEvent(new CustomEvent('timelineDurationChanged', {
+                        detail: { duration: this.duration }
+                    }));
+                    
+                    // We must re-render to update ruler marks and track percentages
+                    this.render();
+                }
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Final render on mouse up
+                this.render();
+                
+                console.log('New timeline duration set to:', this.duration);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
     }
 
     addFlag(time) {
@@ -334,13 +430,13 @@ export class TimelineManager {
         };
 
         this.flags.push(flag);
-        this.renderFlags(this.duration * this.pixelsPerSecond * this.zoom);
+        this.renderFlags(this.container.querySelector('.timeline-content').offsetWidth);
         console.log('Added flag at', time);
     }
 
     renderFlags(totalWidth) {
         // Remove existing flags
-        document.querySelectorAll('.timeline-flag').forEach(f => f.remove());
+        this.container.querySelectorAll('.timeline-flag').forEach(f => f.remove());
 
         const ruler = this.container.querySelector('.timeline-ruler');
         if (!ruler) return;
@@ -405,6 +501,7 @@ export class TimelineManager {
             // Double-click to edit label
             flagEl.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 this.editFlagLabel(flag, flagLabel);
             });
 
@@ -423,6 +520,7 @@ export class TimelineManager {
         const originalLabel = flag.label;
         labelEl.contentEditable = 'true';
         labelEl.focus();
+        labelEl.style.pointerEvents = 'auto';
 
         const range = document.createRange();
         range.selectNodeContents(labelEl);
@@ -432,6 +530,7 @@ export class TimelineManager {
 
         const finishEdit = () => {
             labelEl.contentEditable = 'false';
+            labelEl.style.pointerEvents = 'none';
             flag.label = labelEl.textContent.trim() || originalLabel;
             labelEl.textContent = flag.label;
         };
@@ -442,31 +541,10 @@ export class TimelineManager {
                 e.preventDefault();
                 finishEdit();
             } else if (e.key === 'Escape') {
-                flag.label = originalLabel;
+                labelEl.textContent = originalLabel;
                 finishEdit();
             }
         });
-    }
-
-    /**
-     * Updates a track's visual properties (e.g., lock/visibility).
-     * @param {string} effectId - The ID of the effect/track.
-     * @param {object} properties - The properties to update (e.g., { isLocked, isVisible }).
-     */
-    updateEffectProperties(effectId, properties) {
-        const track = this.tracks.find(t => t.id === effectId);
-        const trackEl = this.container.querySelector(`.timeline-track[data-effect-id="${effectId}"]`);
-        
-        if (!track || !trackEl) return;
-
-        if (properties.isLocked !== undefined) {
-            track.isLocked = properties.isLocked;
-            trackEl.classList.toggle('locked', track.isLocked);
-        }
-        if (properties.isVisible !== undefined) {
-            track.isVisible = properties.isVisible;
-            trackEl.classList.toggle('hidden', !track.isVisible);
-        }
     }
 }
 
@@ -502,6 +580,7 @@ style.textContent = `
         cursor: ew-resize;
         opacity: 0;
         transition: opacity 0.15s ease;
+        z-index: 10;
     }
     .bar-handle-start {
         left: 0;
@@ -518,17 +597,8 @@ style.textContent = `
         background: rgba(255, 255, 255, 0.6);
     }
     .timeline-track.locked .track-bar {
-        background: repeating-linear-gradient(
-            45deg,
-            var(--bg-tertiary),
-            var(--bg-tertiary) 10px,
-            var(--bg-secondary) 10px,
-            var(--bg-secondary) 20px
-        ) !important;
         cursor: not-allowed;
-    }
-    .timeline-track.locked .bar-handle {
-        display: none;
+        filter: brightness(0.7);
     }
     .timeline-track.hidden {
         opacity: 0.5;
@@ -536,5 +606,25 @@ style.textContent = `
     .timeline-track.hidden .track-bar {
         opacity: 0.6;
     }
+    /* --- NEW: Styles for Duration Handle --- */
+    .timeline-ruler {
+        position: relative;
+    }
+    .timeline-duration-handle {
+        position: absolute;
+        right: -4px;
+        top: 0;
+        bottom: 0;
+        width: 8px;
+        cursor: ew-resize;
+        background: rgba(255, 107, 53, 0.5);
+        border-left: 2px solid var(--accent-primary);
+        z-index: 20;
+    }
+    .timeline-duration-handle:hover {
+        background: rgba(255, 107, 53, 0.8);
+    }
 `;
 document.head.appendChild(style);
+
+

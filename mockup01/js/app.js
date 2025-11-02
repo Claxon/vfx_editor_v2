@@ -241,6 +241,12 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
             this.onTimelineChanged(e.detail);
         });
 
+        // --- NEW: Listen for global duration changes ---
+        document.addEventListener('timelineDurationChanged', (e) => {
+            this.onTimelineDurationChanged(e.detail);
+        });
+        // --- END NEW ---
+
         // Menu actions
         document.addEventListener('menuAction', (e) => {
             this.handleMenuAction(e.detail);
@@ -380,6 +386,16 @@ Example: size = baseSize * (1 - age / lifetime)"></textarea>
         // Update particle renderer
         this.particleRenderer.updateEffectTimeline(data.effectId, data.start, data.duration);
     }
+    
+    // --- NEW: Handle global duration change ---
+    onTimelineDurationChanged(data) {
+        console.log('Global timeline duration changed:', data.duration);
+        if (this.currentEffectRoot) {
+            this.currentEffectRoot.duration = data.duration;
+        }
+        this.particleRenderer.updateGlobalDuration(data.duration);
+    }
+    // --- END NEW ---
 
     onEffectVisibilityChanged(effectName, isVisible) {
         console.log(`Visibility changed: ${effectName} is ${isVisible ? 'visible' : 'hidden'}`);
@@ -848,3 +864,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.vfxEditor = new VFXEditor();
     await window.vfxEditor.init(); // Call the new async init
 });
+
+
+

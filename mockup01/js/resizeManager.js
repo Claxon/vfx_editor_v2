@@ -78,15 +78,15 @@ export class ResizeManager {
 
         if (this.currentHandle.classList.contains('resize-handle-bottom')) {
             const newHeight = this.startHeight + deltaY;
-            const minHeight = 150;
-            const maxHeight = window.innerHeight - 300;
+            const minHeight = 100;
+            const maxHeight = window.innerHeight - 150;
             this.panel.style.height = `${Math.max(minHeight, Math.min(maxHeight, newHeight))}px`;
         }
 
         if (this.currentHandle.classList.contains('resize-handle-top')) {
             const newHeight = this.startHeight - deltaY;
-            const minHeight = 150;
-            const maxHeight = window.innerHeight - 300;
+            const minHeight = 100;
+            const maxHeight = window.innerHeight - 150;
             this.panel.style.height = `${Math.max(minHeight, Math.min(maxHeight, newHeight))}px`;
         }
     }

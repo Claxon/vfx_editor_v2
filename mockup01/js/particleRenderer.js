@@ -384,6 +384,12 @@ export class ParticleRenderer {
         }
     }
 
+    // --- NEW: Update global timeline duration ---
+    updateGlobalDuration(duration) {
+        this.timelineData.duration = duration;
+        console.log('ParticleRenderer duration updated to:', duration);
+    }
+
     // --- Main Animation Loop ---
 
     startAnimation() {
@@ -496,13 +502,42 @@ export class ParticleRenderer {
     
     reset() {
         this.timelineData.currentTime = 0;
+        this.timelineData.playing = true;
+        
+        // --- FIX: Remove reference to rootEffect. Duration is managed by updateGlobalDuration ---
+        // this.timelineData.duration = rootEffect.duration || 5.0; 
+
+        // Clear particles from all instances
         for (const instance of this.effectInstances.values()) {
             instance.particles = [];
             instance.particleCount = 0;
             instance.spawnAccumulator = 0;
         }
+        
         console.log('🔄 Particle system reset');
+    } // --- FIX: Added missing closing brace } ---
+
+    /**
+     * Toggles the visibility of a specific effect instance.
+     * @param {string} effectId - The name/ID of the effect.
+     * @param {boolean} isVisible - The new visibility state.
+     */
+    // --- FIX: Removed pasted console error log ---
+    updateEffectVisibility(effectId, isVisible) {
+        const instance = this.effectInstances.get(effectId);
+        if (instance) {
+            instance.isVisible = isVisible;
+        }
     }
+
+    // --- NEW: Update global timeline duration ---
+    updateGlobalDuration(duration) {
+        this.timelineData.duration = duration;
+        console.log('ParticleRenderer duration updated to:', duration);
+    }
+    // --- END NEW ---
+
+    // --- Main Animation Loop ---
 
     // --- Data Export (Unused by App) ---
     exportState() {
@@ -521,4 +556,8 @@ export class ParticleRenderer {
         return state;
     }
 }
+
+
+
+
 
